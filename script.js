@@ -54,12 +54,12 @@ function getCostHtml(costArray) {
         if (resName === 'монета' || resName === 'монеты') {
             html += `
                 <div class="coin-icon-container" title="${count} Монет">
-                    <img src="assets/${filename}" class="res-icon" alt="${resName}" onerror="this.outerHTML='<span class=\\'res-text\\'>${count} ${resName}</span>'">
+                    <img src="assets/icons/${filename}" class="res-icon" alt="${resName}" onerror="this.outerHTML='<span class=\\'res-text\\'>${count} ${resName}</span>'">
                     <span class="coin-amount">${count}</span>
                 </div>`;
         } else {
             for (let i = 0; i < count; i++) {
-                html += `<img src="assets/${filename}" class="res-icon" alt="${resName}" title="${resName}" onerror="this.outerHTML='<span class=\\'res-text\\'>${resName}</span>'">`;
+                html += `<img src="assets/icons/${filename}" class="res-icon" alt="${resName}" title="${resName}" onerror="this.outerHTML='<span class=\\'res-text\\'>${resName}</span>'">`;
             }
         }
     });
@@ -203,22 +203,25 @@ function renderItems() {
         const categoryLabel = searchQuery.length > 0 ?
             `<div class="item-category-label">${categoryNames[item.category] || item.category}</div>` : '';
 
+        let bgImage = 'wonder.png';
+        if (item.category === 'guilds') bgImage = 'guild.png';
+        else if (item.age) bgImage = `${item.age}-epoch.png`;
+        else if (item.category === 'tokens') bgImage = ''; // tokens might not have a background
+
+        const bgStyle = bgImage ? `background-image: url('assets/cards/${bgImage}')` : '';
+        card.setAttribute('style', `animation-delay: ${index * 0.05}s; ${bgStyle}`);
+
         // Render card structure
         card.innerHTML = `
             <div class="card-top-bar">
-                <div class="card-title">${item.title}</div>
-            </div>
-            <div class="card-middle">
-                <div class="card-side left">${costHtml}</div>
-                <div class="card-art">
-                    <!-- Art Placeholder -->
-                    ${categoryLabel}
-                </div>
-                <div class="card-side right">${chainSymbol}</div>
-            </div>
-            <div class="card-bottom-effect">
                 <div class="effect-desc">${item.desc || item.type || ''}</div>
                 <div class="effect-icons">${tagsHtml}</div>
+            </div>
+            ${categoryLabel}
+            <div class="card-side left">${costHtml}</div>
+            <div class="card-side right">${chainSymbol}</div>
+            <div class="card-bottom-effect">
+                <div class="card-title">${item.title}</div>
             </div>
         `;
 
@@ -227,8 +230,19 @@ function renderItems() {
 }
 
 function renderPredictor() {
+    const predictorList = document.getElementById('predictorList');
+    const removedList = document.getElementById('removedList');
+    const removedHeader = document.getElementById('removedHeader');
+    const removedListCount = document.getElementById('removedListCount');
+
     predictorList.innerHTML = '';
-    const deck = gameData.predictorDeck[currentAge];
+    removedList.innerHTML = '';
+    const colorOrder = ['brown', 'gray', 'yellow', 'blue', 'green', 'red', 'purple', 'wonder', 'token'];
+    const deck = [...gameData.predictorDeck[currentAge]].sort((a, b) => {
+        const indexA = colorOrder.indexOf(a.color);
+        const indexB = colorOrder.indexOf(b.color);
+        return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+    });
 
     let totalCards = deck.length;
     let removedCount = 0;
@@ -244,43 +258,43 @@ function renderPredictor() {
         let costHtml = card.cost && card.cost.length > 0 ? `<div class="card-cost">${getCostHtml(card.cost)}</div>` : '';
         let chainSymbol = card.chain ? `<div class="card-chain">${card.chain}</div>` : '';
 
+        let bgImage = `${currentAge}-epoch.png`;
+        if (card.color === 'purple') bgImage = 'guild.png';
+        if (bgImage) {
+            cardEl.style.backgroundImage = `url('assets/cards/${bgImage}')`;
+        }
+
         cardEl.innerHTML = `
-            <div class="checkbox-wrap"></div>
             <div class="card-top-bar">
-                <div class="card-title">${card.title}</div>
-            </div>
-            <div class="card-middle">
-                <div class="card-side left">${costHtml}</div>
-                <div class="card-art"></div>
-                <div class="card-side right">${chainSymbol}</div>
-            </div>
-            <div class="card-bottom-effect">
                 <div class="effect-desc">${card.type}</div>
+            </div>
+            <div class="card-side left">${costHtml}</div>
+            <div class="card-side right">${chainSymbol}</div>
+            <div class="card-bottom-effect">
+                <div class="card-title">${card.title}</div>
             </div>
         `;
 
         cardEl.addEventListener('click', () => {
-            let currentRemoved = parseInt(cardsRemovedEl.textContent) || 0;
-
             if (removedCards.has(card.id)) {
                 removedCards.delete(card.id);
-                cardEl.classList.remove('removed');
-                currentRemoved--;
             } else {
                 removedCards.add(card.id);
-                cardEl.classList.add('removed');
-                currentRemoved++;
             }
-
-            cardsLeftEl.textContent = totalCards - currentRemoved;
-            cardsRemovedEl.textContent = currentRemoved;
+            renderPredictor();
         });
 
-        predictorList.appendChild(cardEl);
+        if (isRemoved) {
+            removedList.appendChild(cardEl);
+        } else {
+            predictorList.appendChild(cardEl);
+        }
     });
 
     cardsLeftEl.textContent = totalCards - removedCount;
     cardsRemovedEl.textContent = removedCount;
+    removedListCount.textContent = removedCount;
+    removedHeader.style.display = removedCount > 0 ? 'block' : 'none';
 }
 
 // Start app

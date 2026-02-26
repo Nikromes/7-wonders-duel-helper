@@ -30,7 +30,7 @@
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input type="text" id="searchInput" placeholder="Поиск (например, Пирамиды)..." autocomplete="off">
+                    <input type="text" id="searchInput" placeholder="Поиск (например, Щит)..." autocomplete="off">
                 </div>
                 <ul class="tabs">
                     <li class="tab active" data-tab="tokens">Жетоны</li>
@@ -78,6 +78,13 @@
 
             <div class="predictor-list" id="predictorList">
                 <!-- Predictor cards injected by JS -->
+            </div>
+
+            <div class="predictor-header-small" id="removedHeader">
+                <h2>Выбывшие карты (<span id="removedListCount">0</span>)</h2>
+            </div>
+            <div class="predictor-list removed-container" id="removedList">
+                <!-- Removed cards injected by JS -->
             </div>
         </div>
     </main>
