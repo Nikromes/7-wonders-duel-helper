@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>7 Wonders Duel Helper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="header">
+        <h1>7 Wonders Duel</h1>
+        <p class="subtitle">Помощник по игре</p>
+    </header>
+
+    <main class="main-content">
+        <!-- Wiki View -->
+        <div id="wikiView" class="view-section active">
+            <div class="predictor-sticky">
+                <nav class="main-nav">
+                    <button class="nav-btn active" data-view="wiki">Энциклопедия</button>
+                    <button class="nav-btn" data-view="predictor">Калькулятор Эпох</button>
+                </nav>
+                <div class="search-container">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Поиск (например, Пирамиды)..." autocomplete="off">
+                </div>
+                <ul class="tabs">
+                    <li class="tab active" data-tab="tokens">Жетоны</li>
+                    <li class="tab" data-tab="wonders">Чудеса</li>
+                    <li class="tab" data-tab="guilds">Гильдии</li>
+                </ul>
+            </div>
+
+            <div class="items-container" id="itemsContainer">
+                <!-- Items injected by JS -->
+            </div>
+        </div>
+
+        <!-- Predictor View -->
+        <div id="predictorView" class="view-section">
+            <div class="predictor-header">
+                <h2>Вероятность карт</h2>
+                <p>Отмечайте карты, которые уже лежат на столе (открытые/закрытые), в сбросе или у игроков, чтобы
+                    понять, какие карты остались в колоде / неоткрытыми.</p>
+            </div>
+
+            <div class="predictor-sticky">
+                <nav class="main-nav">
+                    <button class="nav-btn" data-view="wiki">Энциклопедия</button>
+                    <button class="nav-btn active" data-view="predictor">Калькулятор Эпох</button>
+                </nav>
+
+                <ul class="tabs age-tabs">
+                    <li class="tab active" data-age="1">I Эпоха</li>
+                    <li class="tab" data-age="2">II Эпоха</li>
+                    <li class="tab" data-age="3">III Эпоха</li>
+                </ul>
+
+                <div class="predictor-stats">
+                    <div class="stat-box">
+                        <span class="stat-val" id="cardsLeft">10</span>
+                        <span class="stat-label">Осталось в Эпохе</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val" id="cardsRemoved">0</span>
+                        <span class="stat-label">Отмечено (вышли)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="predictor-list" id="predictorList">
+                <!-- Predictor cards injected by JS -->
+            </div>
+        </div>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
