@@ -34,11 +34,7 @@ function getCostHtml(costArray) {
     let html = '<div class="cost-icons">';
 
     costArray.forEach(costStr => {
-        // Handle chained free build (e.g. "+Символ луны")
-        if (costStr.startsWith('+')) {
-            html += `<div class="chain-cost" title="${costStr}">${costStr.replace('+', '')}</div>`;
-            return;
-        }
+        // No more returning +Chain from here, this is strictly for cost.
 
         const parts = costStr.trim().split(' ');
         let count = 1;
@@ -66,6 +62,58 @@ function getCostHtml(costArray) {
 
     html += '</div>';
     return html;
+}
+
+// Helper to parse simple effects into HTML images
+function getEffectHtml(effectStr) {
+    if (!effectStr) return '';
+
+    const s = effectStr.toLowerCase().trim();
+
+    // Basic Exact Matches
+    const resMap = {
+        'дерево': { file: 'wood.png', count: 1 },
+        'глина': { file: 'clay.png', count: 1 },
+        'камень': { file: 'stone.png', count: 1 },
+        'стекло': { file: 'glass.png', count: 1 },
+        'папирус': { file: 'papyrus.png', count: 1 },
+        'дерево x2': { file: 'wood.png', count: 2 },
+        'глина x2': { file: 'clay.png', count: 2 },
+        'камень x2': { file: 'stone.png', count: 2 }
+    };
+
+    if (resMap[s]) {
+        let { file, count } = resMap[s];
+        let html = '<div class="effect-icons-container">';
+        for (let i = 0; i < count; i++) {
+            html += `<img src="assets/icons/${file}" class="res-icon effect-icon" alt="${s}">`;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    // Number-prefixed simple matches
+    const numMatch = s.match(/^(\d+)\s*(щит|щита|щитов|по|монет|монеты|монета)$/);
+    if (numMatch) {
+        let count = parseInt(numMatch[1]);
+        let type = numMatch[2];
+
+        let html = '<div class="effect-icons-container">';
+        if (type.startsWith('щит')) {
+            for (let i = 0; i < count; i++) {
+                html += `<img src="assets/icons/shield.png" class="res-icon effect-icon" alt="щит">`;
+            }
+        } else if (type === 'по') {
+            html += `<div class="vp-icon-container" title="${count} ПО"><span class="vp-amount">${count}</span></div>`;
+        } else if (type.startsWith('монет')) {
+            html += `<div class="coin-icon-container" title="${count} Монет"><img src="assets/icons/coin.png" class="res-icon effect-icon" alt="монеты"><span class="coin-amount">${count}</span></div>`;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    // Fallback
+    return `<div class="effect-desc">${effectStr}</div>`;
 }
 
 // Init
@@ -196,7 +244,10 @@ function renderItems() {
         card.style.animationDelay = `${index * 0.05}s`;
 
         let costHtml = item.cost ? `<div class="card-cost">${getCostHtml(item.cost)}</div>` : '';
-        let chainSymbol = item.chain ? `<div class="card-chain">${item.chain}</div>` : '';
+        // Handle chained reqs / giving
+        let chainReqHtml = item.chainReq ? `<div class="chain-cost req" title="Строится бесплатно при наличии: ${item.chainReq}">${item.chainReq}</div>` : '';
+        let chainGivesHtml = item.chainGiv ? `<div class="chain-cost gives" title="Даёт символ для цепочки: ${item.chainGiv}">${item.chainGiv}</div>` : '';
+
         let tagsHtml = item.tags ? item.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : '';
 
         // Category/wiki display info (if global search)
@@ -214,12 +265,14 @@ function renderItems() {
         // Render card structure
         card.innerHTML = `
             <div class="card-top-bar">
-                <div class="effect-desc">${item.desc || item.type || ''}</div>
-                <div class="effect-icons">${tagsHtml}</div>
+                ${getEffectHtml(item.desc || item.type || '')}
+                ${chainGivesHtml ? `<div class="chain-gives-badge">${chainGivesHtml}</div>` : ''}
+                <div class="card-costs-row">
+                    ${costHtml}
+                </div>
+                ${chainReqHtml ? `<div class="chain-req-row">${chainReqHtml}</div>` : ''}
             </div>
             ${categoryLabel}
-            <div class="card-side left">${costHtml}</div>
-            <div class="card-side right">${chainSymbol}</div>
             <div class="card-bottom-effect">
                 <div class="card-title">${item.title}</div>
             </div>
@@ -256,7 +309,8 @@ function renderPredictor() {
         cardEl.className = `board-card ${colorClass} ${isRemoved ? 'removed' : 'active-in-deck'}`;
 
         let costHtml = card.cost && card.cost.length > 0 ? `<div class="card-cost">${getCostHtml(card.cost)}</div>` : '';
-        let chainSymbol = card.chain ? `<div class="card-chain">${card.chain}</div>` : '';
+        let chainReqHtml = card.chainReq ? `<div class="chain-cost req" title="Строится бесплатно при наличии: ${card.chainReq}">${card.chainReq}</div>` : '';
+        let chainGivesHtml = card.chainGiv ? `<div class="chain-cost gives" title="Даёт символ для цепочки: ${card.chainGiv}">${card.chainGiv}</div>` : '';
 
         let bgImage = `${currentAge}-epoch.png`;
         if (card.color === 'purple') bgImage = 'guild.png';
@@ -266,10 +320,13 @@ function renderPredictor() {
 
         cardEl.innerHTML = `
             <div class="card-top-bar">
-                <div class="effect-desc">${card.type}</div>
+                ${getEffectHtml(card.type)}
+                ${chainGivesHtml ? `<div class="chain-gives-badge">${chainGivesHtml}</div>` : ''}
+                <div class="card-costs-row">
+                    ${costHtml}
+                </div>
+                ${chainReqHtml ? `<div class="chain-req-row">${chainReqHtml}</div>` : ''}
             </div>
-            <div class="card-side left">${costHtml}</div>
-            <div class="card-side right">${chainSymbol}</div>
             <div class="card-bottom-effect">
                 <div class="card-title">${card.title}</div>
             </div>
