@@ -434,7 +434,7 @@ function initXray() {
                     { inline_data: { mime_type: 'image/jpeg', data: base64 } }
                 ]
             }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+            generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
         };
 
         const response = await fetch(endpoint, {
@@ -443,22 +443,35 @@ function initXray() {
             body: JSON.stringify(body)
         });
 
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        if (!response.ok) {
+            const errBody = await response.text();
+            console.error('X-Ray API error:', response.status, errBody);
+            throw new Error(`API ${response.status}: ${errBody.slice(0, 200)}`);
+        }
 
         const data = await response.json();
+        console.log('X-Ray AI full response:', JSON.stringify(data).slice(0, 500));
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        console.log('X-Ray AI response:', text);
+        console.log('X-Ray AI text:', text);
+
+        if (!text) {
+            console.error('X-Ray: empty text in response, full data:', data);
+            return [];
+        }
 
         // Parse JSON from response
         const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         const match = cleaned.match(/\[[\s\S]*\]/);
-        if (!match) return [];
+        if (!match) {
+            console.error('X-Ray: no JSON array found in:', cleaned);
+            return [];
+        }
 
         try {
             const positions = JSON.parse(match[0]);
             return positions.filter(p => typeof p.x === 'number' && typeof p.y === 'number');
-        } catch {
-            console.error('Failed to parse X-Ray positions:', cleaned);
+        } catch (e) {
+            console.error('X-Ray: JSON parse error:', e.message, 'in:', cleaned);
             return [];
         }
     }
@@ -485,24 +498,45 @@ function initXray() {
         xrayVideo.srcObject = null;
     }
 
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // Hidden file input for desktop mode
+    const xrayFileInput = document.createElement('input');
+    xrayFileInput.type = 'file';
+    xrayFileInput.accept = 'image/*';
+    xrayFileInput.style.display = 'none';
+    document.body.appendChild(xrayFileInput);
+
     function openXray() {
         hiddenCards = getHiddenCards();
         detectedPositions = [];
         xrayCards.innerHTML = '';
         xrayCanvas.classList.remove('active');
         xrayCaptureBtn.style.display = '';
-        xrayCaptureBtn.textContent = '📸 Сканировать';
         xrayReshuffleBtn.style.display = 'none';
 
         const ageLabel = currentAge === '1' ? 'I' : currentAge === '2' ? 'II' : 'III';
-        xrayStats.innerHTML = `
-            <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
-            <div class="xray-stats-line">Скрытых карт: ${hiddenCards.length}</div>
-            <div class="xray-stats-sub">Наведите камеру на стол и нажмите 📸</div>
-        `;
 
-        xrayOverlay.classList.add('active');
-        startCamera();
+        if (isMobile) {
+            xrayCaptureBtn.textContent = '📸 Сканировать';
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
+                <div class="xray-stats-line">Скрытых карт: ${hiddenCards.length}</div>
+                <div class="xray-stats-sub">Наведите камеру на стол и нажмите 📸</div>
+            `;
+            xrayVideo.style.display = '';
+            xrayOverlay.classList.add('active');
+            startCamera();
+        } else {
+            xrayCaptureBtn.textContent = '📁 Выбрать фото';
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
+                <div class="xray-stats-line">Скрытых карт: ${hiddenCards.length}</div>
+                <div class="xray-stats-sub">Выберите фото раскладки на столе</div>
+            `;
+            xrayVideo.style.display = 'none';
+            xrayOverlay.classList.add('active');
+        }
     }
 
     function closeXray() {
@@ -510,36 +544,16 @@ function initXray() {
         xrayOverlay.classList.remove('active');
         xrayCards.innerHTML = '';
         xrayCanvas.classList.remove('active');
+        xrayVideo.style.display = '';
     }
 
-    async function onCapture() {
-        // Check video is ready
-        if (!xrayVideo.videoWidth || !xrayVideo.videoHeight) {
-            xrayStats.innerHTML = `
-                <div class="xray-stats-line" style="color:#ef5350;">❌ Камера ещё не готова</div>
-                <div class="xray-stats-sub">Подождите пока появится изображение и попробуйте снова</div>
-            `;
-            return;
-        }
-
-        // Check API key
-        const apiKey = getApiKey();
-        if (!apiKey) {
-            xrayStats.innerHTML = `
-                <div class="xray-stats-line" style="color:#ef5350;">❌ API-ключ не установлен</div>
-                <div class="xray-stats-sub">Закройте X-Ray → нажмите ⚙️ → введите ключ</div>
-            `;
-            return;
-        }
-
+    // Shared analysis function — takes dataUrl, detects positions, renders cards
+    async function analyzeFrame(frameDataUrl) {
         xrayCaptureBtn.textContent = '⏳ Анализ...';
         xrayCaptureBtn.disabled = true;
 
         try {
-            const frameDataUrl = captureFrame();
-            console.log('X-Ray: frame captured, size:', frameDataUrl.length, 'video:', xrayVideo.videoWidth, 'x', xrayVideo.videoHeight);
-
-            // Freeze: show canvas, hide video
+            // Draw image on canvas
             xrayCanvas.classList.add('active');
             xrayVideo.style.display = 'none';
             stopCamera();
@@ -556,11 +570,12 @@ function initXray() {
                     <div class="xray-stats-line" style="color:#ef5350;">❌ Закрытые карты не обнаружены</div>
                     <div class="xray-stats-sub">Попробуйте другой ракурс или более яркое освещение</div>
                 `;
-                // Unfreeze
                 xrayCanvas.classList.remove('active');
-                xrayVideo.style.display = '';
-                startCamera();
-                xrayCaptureBtn.textContent = '📸 Сканировать';
+                if (isMobile) {
+                    xrayVideo.style.display = '';
+                    startCamera();
+                }
+                xrayCaptureBtn.textContent = isMobile ? '📸 Сканировать' : '📁 Выбрать фото';
                 xrayCaptureBtn.disabled = false;
                 return;
             }
@@ -579,13 +594,69 @@ function initXray() {
                 <div class="xray-stats-sub">Проверьте API-ключ и подключение к интернету</div>
             `;
             xrayCanvas.classList.remove('active');
-            xrayVideo.style.display = '';
-            startCamera();
+            if (isMobile) {
+                xrayVideo.style.display = '';
+                startCamera();
+            }
         }
 
-        xrayCaptureBtn.textContent = '📸 Сканировать';
+        xrayCaptureBtn.textContent = isMobile ? '📸 Сканировать' : '📁 Выбрать фото';
         xrayCaptureBtn.disabled = false;
     }
+
+    async function onCapture() {
+        // Check API key first
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line" style="color:#ef5350;">❌ API-ключ не установлен</div>
+                <div class="xray-stats-sub">Закройте X-Ray → нажмите ⚙️ → введите ключ</div>
+            `;
+            return;
+        }
+
+        if (isMobile) {
+            // Mobile: capture from camera
+            if (!xrayVideo.videoWidth || !xrayVideo.videoHeight) {
+                xrayStats.innerHTML = `
+                    <div class="xray-stats-line" style="color:#ef5350;">❌ Камера ещё не готова</div>
+                    <div class="xray-stats-sub">Подождите пока появится изображение и попробуйте снова</div>
+                `;
+                return;
+            }
+            const frameDataUrl = captureFrame();
+            console.log('X-Ray: frame captured, size:', frameDataUrl.length, 'video:', xrayVideo.videoWidth, 'x', xrayVideo.videoHeight);
+            await analyzeFrame(frameDataUrl);
+        } else {
+            // Desktop: open file picker
+            xrayFileInput.click();
+        }
+    }
+
+    // Handle file selection on desktop
+    xrayFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        xrayFileInput.value = '';
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            const dataUrl = ev.target.result;
+
+            // Draw on canvas for visual background
+            const img = new Image();
+            img.onload = async () => {
+                xrayCanvas.width = img.width;
+                xrayCanvas.height = img.height;
+                const ctx = xrayCanvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                console.log('X-Ray: file loaded, size:', img.width, 'x', img.height);
+                await analyzeFrame(dataUrl);
+            };
+            img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    });
 
     xrayBtn.addEventListener('click', openXray);
     xrayCloseBtn.addEventListener('click', closeXray);
