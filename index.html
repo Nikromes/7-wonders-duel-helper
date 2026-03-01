@@ -14,7 +14,29 @@
     <header class="header">
         <h1>7 Wonders Duel</h1>
         <p class="subtitle">Помощник по игре</p>
+        <button class="settings-btn" id="settingsBtn" title="Настройки">⚙️</button>
     </header>
+
+    <!-- Settings Modal -->
+    <div class="scan-overlay" id="settingsOverlay">
+        <div class="settings-modal">
+            <h3 class="settings-title">⚙️ Настройки</h3>
+            <div class="settings-field">
+                <label for="apiKeyInput">API-ключ Gemini</label>
+                <input type="password" id="apiKeyInput" class="settings-input" placeholder="Вставьте ключ сюда...">
+                <p class="settings-hint">
+                    Ключ хранится только в вашем браузере.
+                    <a href="https://aistudio.google.com/apikey" target="_blank">Получить бесплатно →</a>
+                </p>
+            </div>
+            <div class="settings-status" id="settingsStatus"></div>
+            <div class="settings-actions">
+                <button class="settings-save-btn" id="settingsSaveBtn">💾 Сохранить</button>
+                <button class="settings-clear-btn" id="settingsClearBtn">🗑️ Удалить ключ</button>
+            </div>
+            <button class="settings-close-btn" id="settingsCloseBtn">Закрыть</button>
+        </div>
+    </div>
 
     <main class="main-content">
         <!-- Wiki View -->
@@ -74,6 +96,15 @@
                         <span class="stat-label">Отмечено (вышли)</span>
                     </div>
                 </div>
+                <button class="scan-btn" id="scanBtn" title="Сфотографировать стол">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    <span>Сканировать стол</span>
+                </button>
+                <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none">
             </div>
 
             <div class="predictor-list" id="predictorList">
@@ -87,10 +118,32 @@
                 <!-- Removed cards injected by JS -->
             </div>
         </div>
+
+        <!-- Scan Overlay -->
+        <div class="scan-overlay" id="scanOverlay">
+            <div class="scan-modal">
+                <div class="scan-spinner"></div>
+                <p class="scan-status" id="scanStatus">Анализ фото...</p>
+                <button class="scan-cancel-btn" id="scanCancelBtn">Отмена</button>
+            </div>
+        </div>
+
+        <!-- Scan Results Overlay -->
+        <div class="scan-overlay" id="scanResultsOverlay">
+            <div class="scan-results-modal">
+                <h3 class="scan-results-title">📋 Результат анализа</h3>
+                <div class="scan-results-body" id="scanResultsBody"></div>
+                <button class="scan-results-close-btn" id="scanResultsCloseBtn">Закрыть</button>
+            </div>
+        </div>
     </main>
 
+    <script src="api-key.js"></script>
+    <script src="ai-config.js"></script>
+    <script src="scan-prompt.js"></script>
     <script src="data.js"></script>
     <script src="script.js"></script>
+    <script src="scan.js"></script>
 </body>
 
 </html>

@@ -34,8 +34,6 @@ function getCostHtml(costArray) {
     let html = '<div class="cost-icons">';
 
     costArray.forEach(costStr => {
-        // No more returning +Chain from here, this is strictly for cost.
-
         const parts = costStr.trim().split(' ');
         let count = 1;
         let resName = costStr.toLowerCase();
@@ -129,7 +127,6 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             const viewId = btn.dataset.view;
 
-            // Make ALL buttons with this viewId active
             navBtns.forEach(b => {
                 if (b.dataset.view === viewId) {
                     b.classList.add('active');
@@ -180,11 +177,9 @@ function setupEventListeners() {
 function renderItems() {
     itemsContainer.innerHTML = '';
 
-    // Combine arrays if searching across all, or filter by tab
     let itemsToRender = [];
 
     if (searchQuery.length > 0) {
-        // Global search across all categories (tokens, wonders, guilds)
         ['tokens', 'wonders', 'guilds'].forEach(category => {
             const matched = gameData[category].filter(item =>
                 item.title.toLowerCase().includes(searchQuery) ||
@@ -194,7 +189,6 @@ function renderItems() {
             itemsToRender = [...itemsToRender, ...matched];
         });
 
-        // Also search in predictor decks
         Object.keys(gameData.predictorDeck).forEach(age => {
             const matched = gameData.predictorDeck[age].filter(item =>
                 item.title.toLowerCase().includes(searchQuery) ||
@@ -209,12 +203,20 @@ function renderItems() {
         });
 
     } else {
-        // Tab specific items
         itemsToRender = gameData[currentTab].map(item => ({ ...item, category: currentTab }));
     }
 
-    // Sort alphabetically by title
-    itemsToRender.sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+    // Sort: base game first, then DLC grouped by name, alphabetical within each group
+    itemsToRender.sort((a, b) => {
+        const aDlc = a.dlc || '';
+        const bDlc = b.dlc || '';
+        if (aDlc !== bDlc) {
+            if (!aDlc) return -1;
+            if (!bDlc) return 1;
+            return aDlc.localeCompare(bDlc);
+        }
+        return a.title.localeCompare(b.title, 'ru');
+    });
 
     if (itemsToRender.length === 0) {
         itemsContainer.innerHTML = `
@@ -238,43 +240,39 @@ function renderItems() {
 
     itemsToRender.forEach((item, index) => {
         const card = document.createElement('div');
-        // Apply color based on data source
         const colorClass = item.color ? `card-color-${item.color}` : 'card-color-wonder';
         card.className = `item-card ${colorClass}`;
-        card.style.animationDelay = `${index * 0.05}s`;
 
-        let costHtml = item.cost ? `<div class="card-cost">${getCostHtml(item.cost)}</div>` : '';
-        // Handle chained reqs / giving
-        let chainReqHtml = item.chainReq ? `<div class="chain-cost req" title="Строится бесплатно при наличии: ${item.chainReq}">${item.chainReq}</div>` : '';
-        let chainGivesHtml = item.chainGiv ? `<div class="chain-cost gives" title="Даёт символ для цепочки: ${item.chainGiv}">${item.chainGiv}</div>` : '';
+        const hasCost = item.cost && item.cost.length > 0;
+        const costHtml = hasCost ? `<div class="card-info-badge cost-badge">${getCostHtml(item.cost)}</div>` : '';
+        const chainReqHtml = item.chainReq ? `<div class="card-info-badge chain-badge" title="Строится бесплатно при цепочке: ${item.chainReq}">🔗 ${item.chainReq}</div>` : '';
+        const chainGivesHtml = item.chainGiv ? `<div class="card-info-badge chain-gives-indicator" title="Даёт символ: ${item.chainGiv}">⛓ ${item.chainGiv}</div>` : '';
 
-        let tagsHtml = item.tags ? item.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : '';
+        const hasInfoRow = hasCost || item.chainReq || item.chainGiv;
 
-        // Category/wiki display info (if global search)
         const categoryLabel = searchQuery.length > 0 ?
             `<div class="item-category-label">${categoryNames[item.category] || item.category}</div>` : '';
 
         let bgImage = 'wonder.png';
         if (item.category === 'guilds') bgImage = 'guild.png';
         else if (item.age) bgImage = `${item.age}-epoch.png`;
-        else if (item.category === 'tokens') bgImage = ''; // tokens might not have a background
+        else if (item.category === 'tokens') bgImage = '';
 
-        const bgStyle = bgImage ? `background-image: url('assets/cards/${bgImage}')` : '';
-        card.setAttribute('style', `animation-delay: ${index * 0.05}s; ${bgStyle}`);
+        let styleStr = `animation-delay: ${index * 0.05}s`;
+        if (bgImage) styleStr += `; background-image: url('assets/cards/${bgImage}')`;
+        card.setAttribute('style', styleStr);
 
-        // Render card structure
+        const dlcBadge = item.dlc ? `<div class="dlc-badge dlc-${item.dlc.toLowerCase()}">${item.dlc}</div>` : '';
+
         card.innerHTML = `
             <div class="card-top-bar">
                 ${getEffectHtml(item.desc || item.type || '')}
-                ${chainGivesHtml ? `<div class="chain-gives-badge">${chainGivesHtml}</div>` : ''}
-                <div class="card-costs-row">
-                    ${costHtml}
-                </div>
-                ${chainReqHtml ? `<div class="chain-req-row">${chainReqHtml}</div>` : ''}
             </div>
+            ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
             ${categoryLabel}
-            <div class="card-bottom-effect">
+            <div class="card-bottom-strip">
                 <div class="card-title">${item.title}</div>
+                ${dlcBadge}
             </div>
         `;
 
@@ -291,7 +289,22 @@ function renderPredictor() {
     predictorList.innerHTML = '';
     removedList.innerHTML = '';
     const colorOrder = ['brown', 'gray', 'yellow', 'blue', 'green', 'red', 'purple', 'wonder', 'token'];
-    const deck = [...gameData.predictorDeck[currentAge]].sort((a, b) => {
+
+    // Build deck: for Age 3, merge guilds from gameData.guilds
+    let deckSource = [...gameData.predictorDeck[currentAge]];
+    if (currentAge === '3') {
+        const guildCards = gameData.guilds.map((g, i) => ({
+            id: `a3_guild_${i}`,
+            title: g.title,
+            type: g.desc,
+            color: g.color,
+            cost: g.cost,
+            dlc: g.dlc
+        }));
+        deckSource = [...deckSource, ...guildCards];
+    }
+
+    const deck = deckSource.sort((a, b) => {
         const indexA = colorOrder.indexOf(a.color);
         const indexB = colorOrder.indexOf(b.color);
         return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
@@ -308,26 +321,22 @@ function renderPredictor() {
         const colorClass = card.color ? `card-color-${card.color}` : '';
         cardEl.className = `board-card ${colorClass} ${isRemoved ? 'removed' : 'active-in-deck'}`;
 
-        let costHtml = card.cost && card.cost.length > 0 ? `<div class="card-cost">${getCostHtml(card.cost)}</div>` : '';
-        let chainReqHtml = card.chainReq ? `<div class="chain-cost req" title="Строится бесплатно при наличии: ${card.chainReq}">${card.chainReq}</div>` : '';
-        let chainGivesHtml = card.chainGiv ? `<div class="chain-cost gives" title="Даёт символ для цепочки: ${card.chainGiv}">${card.chainGiv}</div>` : '';
+        const hasCost = card.cost && card.cost.length > 0;
+        const costHtml = hasCost ? `<div class="card-info-badge cost-badge">${getCostHtml(card.cost)}</div>` : '';
+        const chainReqHtml = card.chainReq ? `<div class="card-info-badge chain-badge" title="Цепочка: ${card.chainReq}">🔗 ${card.chainReq}</div>` : '';
+        const chainGivesHtml = card.chainGiv ? `<div class="card-info-badge chain-gives-indicator" title="Даёт: ${card.chainGiv}">⛓ ${card.chainGiv}</div>` : '';
+        const hasInfoRow = hasCost || card.chainReq || card.chainGiv;
 
         let bgImage = `${currentAge}-epoch.png`;
         if (card.color === 'purple') bgImage = 'guild.png';
-        if (bgImage) {
-            cardEl.style.backgroundImage = `url('assets/cards/${bgImage}')`;
-        }
+        cardEl.style.backgroundImage = `url('assets/cards/${bgImage}')`;
 
         cardEl.innerHTML = `
             <div class="card-top-bar">
                 ${getEffectHtml(card.type)}
-                ${chainGivesHtml ? `<div class="chain-gives-badge">${chainGivesHtml}</div>` : ''}
-                <div class="card-costs-row">
-                    ${costHtml}
-                </div>
-                ${chainReqHtml ? `<div class="chain-req-row">${chainReqHtml}</div>` : ''}
             </div>
-            <div class="card-bottom-effect">
+            ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
+            <div class="card-bottom-strip">
                 <div class="card-title">${card.title}</div>
             </div>
         `;
