@@ -384,14 +384,14 @@ function initXray() {
 
         xrayCards.innerHTML = assigned.map((card, i) => {
             const pos = detectedPositions[i];
-            const bg = colorMap[card.color] || '#555';
-            const costStr = card.cost && card.cost.length > 0 ? card.cost.join(', ') : 'бесплатно';
+            const imgSrc = `assets/cards/faces/${card.id}.JPG`;
             return `
                 <div class="xray-card" style="left: ${pos.x}%; top: ${pos.y}%;">
-                    <div class="xray-card-color" style="background: ${bg};"></div>
-                    <div class="xray-card-title">${card.title}</div>
-                    <div class="xray-card-info">${card.type || ''}</div>
-                    <div class="xray-card-info">${costStr}</div>
+                    <img class="xray-card-img" src="${imgSrc}" alt="${card.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                    <div class="xray-card-fallback" style="display:none;">
+                        <div class="xray-card-title">${card.title}</div>
+                        <div class="xray-card-info">${card.type || ''}</div>
+                    </div>
                 </div>
             `;
         }).join('');
