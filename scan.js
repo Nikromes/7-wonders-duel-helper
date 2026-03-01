@@ -323,8 +323,121 @@ function initSettings() {
     });
 }
 
+// ---- X-Ray Зрение ----
+
+function initXray() {
+    const xrayBtn = document.getElementById('xrayBtn');
+    const xrayOverlay = document.getElementById('xrayOverlay');
+    const xrayVideo = document.getElementById('xrayVideo');
+    const xrayStats = document.getElementById('xrayStats');
+    const xrayCards = document.getElementById('xrayCards');
+    const xrayCloseBtn = document.getElementById('xrayCloseBtn');
+
+    let xrayStream = null;
+
+    const colorMap = {
+        brown: '#8d6e4a',
+        gray: '#9e9e9e',
+        red: '#e53935',
+        blue: '#42a5f5',
+        green: '#66bb6a',
+        yellow: '#fdd835',
+        purple: '#ab47bc'
+    };
+
+    function getHiddenCards() {
+        // Build full deck for current age (same logic as renderPredictor)
+        let deck = [...gameData.predictorDeck[currentAge]];
+        if (currentAge === '3') {
+            const guildCards = gameData.guilds.map((g, i) => ({
+                id: `a3_guild_${i}`,
+                title: g.title,
+                type: g.desc,
+                color: g.color,
+                cost: g.cost,
+                dlc: g.dlc
+            }));
+            deck = [...deck, ...guildCards];
+        }
+        // Hidden = not in removedCards
+        return deck.filter(c => !removedCards.has(c.id));
+    }
+
+    function renderXrayCards() {
+        const hidden = getHiddenCards();
+        const total = hidden.length;
+        const inBox = 3;
+        const onTable = Math.max(0, total - inBox);
+        const ageLabel = currentAge === '1' ? 'I' : currentAge === '2' ? 'II' : 'III';
+
+        xrayStats.innerHTML = `
+            <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
+            <div class="xray-stats-line">Скрыто: ${total} карт (${inBox} в коробке + ${onTable} на столе)</div>
+            <div class="xray-stats-sub">Наведите камеру на стол — ниже возможные скрытые карты</div>
+        `;
+
+        const colorOrder = ['brown', 'gray', 'yellow', 'blue', 'green', 'red', 'purple'];
+        hidden.sort((a, b) => {
+            const iA = colorOrder.indexOf(a.color);
+            const iB = colorOrder.indexOf(b.color);
+            return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
+        });
+
+        xrayCards.innerHTML = hidden.map(card => {
+            const bg = colorMap[card.color] || '#555';
+            const costStr = card.cost && card.cost.length > 0 ? card.cost.join(', ') : 'бесплатно';
+            const effect = card.type || '';
+            return `
+                <div class="xray-card">
+                    <div class="xray-card-color" style="background: ${bg};"></div>
+                    <div class="xray-card-title">${card.title}</div>
+                    <div class="xray-card-info">${effect}</div>
+                    <div class="xray-card-info">${costStr}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function startCamera() {
+        try {
+            xrayStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+            xrayVideo.srcObject = xrayStream;
+        } catch (err) {
+            console.error('Camera error:', err);
+            showToast('⚠️ Не удалось включить камеру', 'error');
+            closeXray();
+        }
+    }
+
+    function stopCamera() {
+        if (xrayStream) {
+            xrayStream.getTracks().forEach(t => t.stop());
+            xrayStream = null;
+        }
+        xrayVideo.srcObject = null;
+    }
+
+    function openXray() {
+        renderXrayCards();
+        xrayOverlay.classList.add('active');
+        startCamera();
+    }
+
+    function closeXray() {
+        stopCamera();
+        xrayOverlay.classList.remove('active');
+    }
+
+    xrayBtn.addEventListener('click', openXray);
+    xrayCloseBtn.addEventListener('click', closeXray);
+}
+
 // Инициализация после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
     initScan();
     initSettings();
+    initXray();
 });

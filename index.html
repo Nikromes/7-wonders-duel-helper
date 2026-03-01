@@ -104,6 +104,18 @@
                     </svg>
                     <span>Сканировать стол</span>
                 </button>
+                <button class="xray-btn" id="xrayBtn" title="X-Ray зрение">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="4" />
+                        <line x1="12" y1="2" x2="12" y2="6" />
+                        <line x1="12" y1="18" x2="12" y2="22" />
+                        <line x1="2" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="22" y2="12" />
+                    </svg>
+                    <span>X-Ray</span>
+                </button>
                 <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none">
             </div>
 
@@ -117,6 +129,14 @@
             <div class="predictor-list removed-container" id="removedList">
                 <!-- Removed cards injected by JS -->
             </div>
+        </div>
+
+        <!-- X-Ray Overlay -->
+        <div class="xray-overlay" id="xrayOverlay">
+            <video class="xray-video" id="xrayVideo" autoplay playsinline muted></video>
+            <div class="xray-stats" id="xrayStats"></div>
+            <div class="xray-cards" id="xrayCards"></div>
+            <button class="xray-close-btn" id="xrayCloseBtn">✕</button>
         </div>
 
         <!-- Scan Overlay -->
