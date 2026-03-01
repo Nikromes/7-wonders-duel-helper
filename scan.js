@@ -51,11 +51,23 @@ function initScan() {
             scanStatus.textContent = 'Анализ карт через AI...';
 
             const deck = gameData.predictorDeck[currentAge];
-            const cardNames = deck.map(c => c.title).join(', ');
+            // Build detailed card data for AI: name | color | cost | effect
+            const colorNames = { brown: 'коричневая', gray: 'серая', red: 'красная', blue: 'синяя', green: 'зелёная', yellow: 'жёлтая', purple: 'фиолетовая' };
+            const cardData = deck.map(c => {
+                const colorRu = colorNames[c.color] || c.color;
+                const costStr = c.cost && c.cost.length > 0 ? c.cost.join(', ') : 'бесплатно';
+                const effect = c.type || '';
+                return `${c.title} | ${colorRu} | ${costStr} | ${effect}`;
+            }).join('\n');
             const ageLabel = currentAge === '1' ? 'I' : currentAge === '2' ? 'II' : 'III';
 
+            console.group('📷 Scan — данные для AI');
+            console.log('Эпоха:', ageLabel);
+            console.log('Карты:\n' + cardData);
+            console.groupEnd();
+
             scanAbortController = new AbortController();
-            const recognizedNames = await callGeminiVision(base64, mimeType, ageLabel, cardNames, scanAbortController.signal);
+            const recognizedNames = await callGeminiVision(base64, mimeType, ageLabel, cardData, scanAbortController.signal);
 
             scanStatus.textContent = 'Сопоставление карт...';
 
@@ -134,11 +146,11 @@ function fileToBase64(file) {
     });
 }
 
-async function callGeminiVision(base64Image, mimeType, ageLabel, cardNames, signal) {
+async function callGeminiVision(base64Image, mimeType, ageLabel, cardData, signal) {
     // Собираем промпт из шаблона
     const prompt = SCAN_PROMPT_TEMPLATE
         .replace('{{AGE_LABEL}}', ageLabel)
-        .replace('{{CARD_NAMES}}', cardNames);
+        .replace('{{CARD_DATA}}', cardData);
 
     const endpoint = AI_CONFIG.getEndpoint();
 
