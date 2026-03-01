@@ -329,73 +329,138 @@ function initXray() {
     const xrayBtn = document.getElementById('xrayBtn');
     const xrayOverlay = document.getElementById('xrayOverlay');
     const xrayVideo = document.getElementById('xrayVideo');
+    const xrayCanvas = document.getElementById('xrayCanvas');
     const xrayStats = document.getElementById('xrayStats');
     const xrayCards = document.getElementById('xrayCards');
     const xrayCloseBtn = document.getElementById('xrayCloseBtn');
+    const xrayCaptureBtn = document.getElementById('xrayCaptureBtn');
+    const xrayReshuffleBtn = document.getElementById('xrayReshuffleBtn');
 
     let xrayStream = null;
+    let detectedPositions = []; // [{x: %, y: %}, ...] from AI
+    let hiddenCards = [];       // cards not in removedCards
 
     const colorMap = {
-        brown: '#8d6e4a',
-        gray: '#9e9e9e',
-        red: '#e53935',
-        blue: '#42a5f5',
-        green: '#66bb6a',
-        yellow: '#fdd835',
-        purple: '#ab47bc'
+        brown: '#8d6e4a', gray: '#9e9e9e', red: '#e53935',
+        blue: '#42a5f5', green: '#66bb6a', yellow: '#fdd835', purple: '#ab47bc'
     };
 
     function getHiddenCards() {
-        // Build full deck for current age (same logic as renderPredictor)
         let deck = [...gameData.predictorDeck[currentAge]];
         if (currentAge === '3') {
             const guildCards = gameData.guilds.map((g, i) => ({
-                id: `a3_guild_${i}`,
-                title: g.title,
-                type: g.desc,
-                color: g.color,
-                cost: g.cost,
-                dlc: g.dlc
+                id: `a3_guild_${i}`, title: g.title, type: g.desc,
+                color: g.color, cost: g.cost, dlc: g.dlc
             }));
             deck = [...deck, ...guildCards];
         }
-        // Hidden = not in removedCards
         return deck.filter(c => !removedCards.has(c.id));
     }
 
-    function renderXrayCards() {
-        const hidden = getHiddenCards();
-        const total = hidden.length;
-        const inBox = 3;
-        const onTable = Math.max(0, total - inBox);
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function renderOverlayCards() {
         const ageLabel = currentAge === '1' ? 'I' : currentAge === '2' ? 'II' : 'III';
+        const total = hiddenCards.length;
+        const spotsOnTable = detectedPositions.length;
+        const inBox = Math.max(0, total - spotsOnTable);
 
         xrayStats.innerHTML = `
             <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
-            <div class="xray-stats-line">Скрыто: ${total} карт (${inBox} в коробке + ${onTable} на столе)</div>
-            <div class="xray-stats-sub">Наведите камеру на стол — ниже возможные скрытые карты</div>
+            <div class="xray-stats-line">Скрыто: ${total} карт · На столе: ${spotsOnTable} · В коробке: ~${inBox}</div>
+            <div class="xray-stats-sub">Нажмите 🔀 для перераспределения предсказаний</div>
         `;
 
-        const colorOrder = ['brown', 'gray', 'yellow', 'blue', 'green', 'red', 'purple'];
-        hidden.sort((a, b) => {
-            const iA = colorOrder.indexOf(a.color);
-            const iB = colorOrder.indexOf(b.color);
-            return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
-        });
+        // Randomly pick cards for each detected position
+        const shuffled = shuffle(hiddenCards);
+        const assigned = shuffled.slice(0, spotsOnTable);
 
-        xrayCards.innerHTML = hidden.map(card => {
+        xrayCards.innerHTML = assigned.map((card, i) => {
+            const pos = detectedPositions[i];
             const bg = colorMap[card.color] || '#555';
             const costStr = card.cost && card.cost.length > 0 ? card.cost.join(', ') : 'бесплатно';
-            const effect = card.type || '';
             return `
-                <div class="xray-card">
+                <div class="xray-card" style="left: ${pos.x}%; top: ${pos.y}%;">
                     <div class="xray-card-color" style="background: ${bg};"></div>
                     <div class="xray-card-title">${card.title}</div>
-                    <div class="xray-card-info">${effect}</div>
+                    <div class="xray-card-info">${card.type || ''}</div>
                     <div class="xray-card-info">${costStr}</div>
                 </div>
             `;
         }).join('');
+    }
+
+    function captureFrame() {
+        const ctx = xrayCanvas.getContext('2d');
+        xrayCanvas.width = xrayVideo.videoWidth;
+        xrayCanvas.height = xrayVideo.videoHeight;
+        ctx.drawImage(xrayVideo, 0, 0);
+        return xrayCanvas.toDataURL('image/jpeg', 0.8);
+    }
+
+    async function detectFaceDownPositions(base64DataUrl) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            showToast('⚠️ Введите API-ключ в настройках (⚙️)', 'error');
+            return null;
+        }
+
+        const base64 = base64DataUrl.split(',')[1];
+        const prompt = `На этом фото — игровой стол "7 Wonders Duel". На столе карты в пирамидальной раскладке.
+
+Найди ВСЕ карты, которые лежат РУБАШКОЙ ВВЕРХ (закрытые, face-down). Это карты с тёмной однотонной задней стороной без рисунка, обычно коричневого/бежевого цвета с узором.
+
+НЕ ВКЛЮЧАЙ карты лежащие лицом вверх (с видимым рисунком, названием, иконками).
+
+Для каждой найденной закрытой карты верни её ЦЕНТР в процентах от ширины и высоты изображения.
+
+Ответь ТОЛЬКО в формате JSON-массива объектов, без пояснений:
+[{"x": 50, "y": 30}, {"x": 25, "y": 60}]
+
+Где x — процент от левого края (0-100), y — процент от верхнего края (0-100).`;
+
+        const endpoint = AI_CONFIG.getEndpoint();
+        const body = {
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    { inline_data: { mime_type: 'image/jpeg', data: base64 } }
+                ]
+            }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+        };
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        console.log('X-Ray AI response:', text);
+
+        // Parse JSON from response
+        const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const match = cleaned.match(/\[[\s\S]*\]/);
+        if (!match) return [];
+
+        try {
+            const positions = JSON.parse(match[0]);
+            return positions.filter(p => typeof p.x === 'number' && typeof p.y === 'number');
+        } catch {
+            console.error('Failed to parse X-Ray positions:', cleaned);
+            return [];
+        }
     }
 
     async function startCamera() {
@@ -421,7 +486,21 @@ function initXray() {
     }
 
     function openXray() {
-        renderXrayCards();
+        hiddenCards = getHiddenCards();
+        detectedPositions = [];
+        xrayCards.innerHTML = '';
+        xrayCanvas.classList.remove('active');
+        xrayCaptureBtn.style.display = '';
+        xrayCaptureBtn.textContent = '📸 Сканировать';
+        xrayReshuffleBtn.style.display = 'none';
+
+        const ageLabel = currentAge === '1' ? 'I' : currentAge === '2' ? 'II' : 'III';
+        xrayStats.innerHTML = `
+            <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
+            <div class="xray-stats-line">Скрытых карт: ${hiddenCards.length}</div>
+            <div class="xray-stats-sub">Наведите камеру на стол и нажмите 📸</div>
+        `;
+
         xrayOverlay.classList.add('active');
         startCamera();
     }
@@ -429,10 +508,61 @@ function initXray() {
     function closeXray() {
         stopCamera();
         xrayOverlay.classList.remove('active');
+        xrayCards.innerHTML = '';
+        xrayCanvas.classList.remove('active');
+    }
+
+    async function onCapture() {
+        xrayCaptureBtn.textContent = '⏳ Анализ...';
+        xrayCaptureBtn.disabled = true;
+
+        try {
+            const frameDataUrl = captureFrame();
+
+            // Freeze: show canvas, hide video
+            xrayCanvas.classList.add('active');
+            xrayVideo.style.display = 'none';
+            stopCamera();
+
+            const positions = await detectFaceDownPositions(frameDataUrl);
+
+            if (!positions || positions.length === 0) {
+                showToast('❌ Закрытые карты не найдены. Попробуйте другой ракурс.', 'error');
+                // Unfreeze
+                xrayCanvas.classList.remove('active');
+                xrayVideo.style.display = '';
+                startCamera();
+                xrayCaptureBtn.textContent = '📸 Сканировать';
+                xrayCaptureBtn.disabled = false;
+                return;
+            }
+
+            detectedPositions = positions;
+            console.log(`X-Ray: найдено ${positions.length} закрытых карт`, positions);
+
+            renderOverlayCards();
+
+            xrayCaptureBtn.style.display = 'none';
+            xrayReshuffleBtn.style.display = '';
+        } catch (err) {
+            console.error('X-Ray error:', err);
+            showToast('⚠️ Ошибка анализа: ' + err.message, 'error');
+            xrayCanvas.classList.remove('active');
+            xrayVideo.style.display = '';
+            startCamera();
+        }
+
+        xrayCaptureBtn.textContent = '📸 Сканировать';
+        xrayCaptureBtn.disabled = false;
     }
 
     xrayBtn.addEventListener('click', openXray);
     xrayCloseBtn.addEventListener('click', closeXray);
+    xrayCaptureBtn.addEventListener('click', onCapture);
+    xrayReshuffleBtn.addEventListener('click', () => {
+        renderOverlayCards(); // Re-shuffles cards on same positions, no API call
+        showToast('🔀 Перемешано!', 'success');
+    });
 }
 
 // Инициализация после загрузки DOM

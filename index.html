@@ -134,8 +134,13 @@
         <!-- X-Ray Overlay -->
         <div class="xray-overlay" id="xrayOverlay">
             <video class="xray-video" id="xrayVideo" autoplay playsinline muted></video>
+            <canvas class="xray-canvas" id="xrayCanvas"></canvas>
             <div class="xray-stats" id="xrayStats"></div>
             <div class="xray-cards" id="xrayCards"></div>
+            <div class="xray-controls">
+                <button class="xray-capture-btn" id="xrayCaptureBtn">📸 Сканировать</button>
+                <button class="xray-reshuffle-btn" id="xrayReshuffleBtn" style="display:none">🔀 Перемешать</button>
+            </div>
             <button class="xray-close-btn" id="xrayCloseBtn">✕</button>
         </div>
 
