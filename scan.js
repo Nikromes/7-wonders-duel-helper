@@ -513,21 +513,49 @@ function initXray() {
     }
 
     async function onCapture() {
+        // Check video is ready
+        if (!xrayVideo.videoWidth || !xrayVideo.videoHeight) {
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line" style="color:#ef5350;">❌ Камера ещё не готова</div>
+                <div class="xray-stats-sub">Подождите пока появится изображение и попробуйте снова</div>
+            `;
+            return;
+        }
+
+        // Check API key
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line" style="color:#ef5350;">❌ API-ключ не установлен</div>
+                <div class="xray-stats-sub">Закройте X-Ray → нажмите ⚙️ → введите ключ</div>
+            `;
+            return;
+        }
+
         xrayCaptureBtn.textContent = '⏳ Анализ...';
         xrayCaptureBtn.disabled = true;
 
         try {
             const frameDataUrl = captureFrame();
+            console.log('X-Ray: frame captured, size:', frameDataUrl.length, 'video:', xrayVideo.videoWidth, 'x', xrayVideo.videoHeight);
 
             // Freeze: show canvas, hide video
             xrayCanvas.classList.add('active');
             xrayVideo.style.display = 'none';
             stopCamera();
 
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line">⏳ Анализ изображения...</div>
+                <div class="xray-stats-sub">Ищу закрытые карты на фото</div>
+            `;
+
             const positions = await detectFaceDownPositions(frameDataUrl);
 
             if (!positions || positions.length === 0) {
-                showToast('❌ Закрытые карты не найдены. Попробуйте другой ракурс.', 'error');
+                xrayStats.innerHTML = `
+                    <div class="xray-stats-line" style="color:#ef5350;">❌ Закрытые карты не обнаружены</div>
+                    <div class="xray-stats-sub">Попробуйте другой ракурс или более яркое освещение</div>
+                `;
                 // Unfreeze
                 xrayCanvas.classList.remove('active');
                 xrayVideo.style.display = '';
@@ -546,7 +574,10 @@ function initXray() {
             xrayReshuffleBtn.style.display = '';
         } catch (err) {
             console.error('X-Ray error:', err);
-            showToast('⚠️ Ошибка анализа: ' + err.message, 'error');
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line" style="color:#ef5350;">❌ Ошибка: ${err.message}</div>
+                <div class="xray-stats-sub">Проверьте API-ключ и подключение к интернету</div>
+            `;
             xrayCanvas.classList.remove('active');
             xrayVideo.style.display = '';
             startCamera();
