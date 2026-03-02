@@ -276,7 +276,7 @@ function showToast(message, type = 'success') {
 // ---- Настройки API-ключа ----
 
 function initSettings() {
-    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsBtns = document.querySelectorAll('.settings-toolbar-btn');
     const settingsOverlay = document.getElementById('settingsOverlay');
     const settingsCloseBtn = document.getElementById('settingsCloseBtn');
     const settingsSaveBtn = document.getElementById('settingsSaveBtn');
@@ -296,9 +296,11 @@ function initSettings() {
         }
     }
 
-    settingsBtn.addEventListener('click', () => {
-        updateStatus();
-        settingsOverlay.classList.add('active');
+    settingsBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            updateStatus();
+            settingsOverlay.classList.add('active');
+        });
     });
 
     settingsCloseBtn.addEventListener('click', () => {

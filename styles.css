@@ -137,39 +137,39 @@ h1 {
 }
 
 /* ================================
-   HEADER ICON BUTTONS (Fixed)
+   STICKY TOOLBAR (icon buttons)
 ================================ */
-.header-icon-btn {
-    position: fixed;
-    top: 12px;
-    z-index: 100;
-    width: 40px;
-    height: 40px;
+.sticky-toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.toolbar-icon-btn {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: rgba(24, 24, 32, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 20px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.25s ease;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
     padding: 0;
     line-height: 1;
 }
 
-.header-icon-btn:hover,
-.header-icon-btn:active {
-    background: rgba(40, 40, 55, 0.95);
-    color: #fff;
+.toolbar-icon-btn:hover,
+.toolbar-icon-btn:active {
+    background: var(--surface-highlight);
+    color: var(--text-primary);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
-.header-icon-btn svg {
+.toolbar-icon-btn svg {
     width: 18px;
     height: 18px;
     fill: none;
@@ -179,19 +179,11 @@ h1 {
     stroke-linejoin: round;
 }
 
-.settings-btn {
-    right: 16px;
-}
-
-.photo-mode-header-btn {
-    right: 64px;
-}
-
-.photo-mode-header-btn.active {
-    background: rgba(124, 77, 255, 0.5);
+.toolbar-icon-btn.photo-mode-btn.active {
+    background: rgba(124, 77, 255, 0.4);
     color: #fff;
     border-color: rgba(124, 77, 255, 0.6);
-    box-shadow: 0 2px 16px rgba(124, 77, 255, 0.35);
+    box-shadow: 0 2px 12px rgba(124, 77, 255, 0.3);
 }
 
 .settings-modal {

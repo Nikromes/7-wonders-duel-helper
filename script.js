@@ -236,15 +236,16 @@ function setupEventListeners() {
         renderItems();
     });
 
-    // Photo mode toggle
-    const photoModeBtn = document.getElementById('photoModeBtn');
-    if (photoModeBtn) {
-        photoModeBtn.addEventListener('click', () => {
+    // Photo mode toggle (both views have a button)
+    const photoModeBtns = document.querySelectorAll('.photo-mode-btn');
+    photoModeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
             photoMode = !photoMode;
-            photoModeBtn.classList.toggle('active', photoMode);
+            // Sync all photo mode buttons
+            photoModeBtns.forEach(b => b.classList.toggle('active', photoMode));
             renderPredictor();
         });
-    }
+    });
 }
 
 function renderItems() {
