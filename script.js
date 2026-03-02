@@ -149,16 +149,19 @@ async function loadAvailableFaces() {
         }
     });
 
-    // Collect guild card IDs
-    if (gameData.guilds) {
-        gameData.guilds.forEach((g, i) => {
-            const guildId = `a3_guild_${i}`;
-            checks.push(
-                checkImageExists(`assets/cards/faces/${guildId}.JPG`)
-                    .then(exists => { if (exists) loadedCardFaces.add(guildId); })
-            );
-        });
-    }
+    // Collect non-age cards (tokens, wonders, guilds)
+    ['tokens', 'wonders', 'guilds'].forEach(category => {
+        if (gameData[category]) {
+            gameData[category].forEach(item => {
+                if (item.id) {
+                    checks.push(
+                        checkImageExists(`assets/cards/faces/${item.id}.JPG`)
+                            .then(exists => { if (exists) loadedCardFaces.add(item.id); })
+                    );
+                }
+            });
+        }
+    });
 
     // Wait for all checks to complete silently
     await Promise.all(checks);
@@ -377,17 +380,51 @@ function renderItems() {
 
         const dlcBadge = item.dlc ? `<div class="dlc-badge dlc-${item.dlc.toLowerCase()}">${item.dlc}</div>` : '';
 
-        card.innerHTML = `
-            <div class="card-top-bar">
-                ${getEffectHtml(item.desc || item.type || '')}
-            </div>
-            ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
-            ${categoryLabel}
-            <div class="card-bottom-strip">
-                <div class="card-title">${item.title}</div>
-                ${dlcBadge}
-            </div>
-        `;
+        const hasFace = item.id && loadedCardFaces.has(item.id);
+        const usePhotoMode = photoMode && hasFace;
+
+        if (usePhotoMode) {
+            // Photo mode: card is just the face image
+            card.style.backgroundImage = `url('assets/cards/faces/${item.id}.JPG')`;
+            card.style.backgroundSize = 'cover';
+            card.innerHTML = '';
+        } else {
+            const previewBtnHtml = hasFace ? `
+                <button class="card-preview-btn" data-card-id="${item.id}" title="Посмотреть карту">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>` : '';
+
+            card.innerHTML = `
+                ${previewBtnHtml}
+                <div class="card-top-bar">
+                    ${getEffectHtml(item.desc || item.type || '')}
+                </div>
+                ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
+                ${categoryLabel}
+                <div class="card-bottom-strip">
+                    <div class="card-title">${item.title}</div>
+                    ${dlcBadge}
+                </div>
+            `;
+
+            if (hasFace) {
+                const previewBtn = card.querySelector('.card-preview-btn');
+                previewBtn.addEventListener('mouseenter', (e) => {
+                    showFaceTooltip(item.id, previewBtn);
+                });
+                previewBtn.addEventListener('mouseleave', () => {
+                    hideFaceTooltip();
+                });
+                previewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (faceTooltip.classList.contains('visible')) {
+                        hideFaceTooltip();
+                    } else {
+                        showFaceTooltip(item.id, previewBtn);
+                    }
+                });
+            }
+        }
 
         itemsContainer.appendChild(card);
     });
@@ -406,8 +443,8 @@ function renderPredictor() {
     // Build deck: for Age 3, merge guilds from gameData.guilds
     let deckSource = [...gameData.predictorDeck[currentAge]];
     if (currentAge === '3') {
-        const guildCards = gameData.guilds.map((g, i) => ({
-            id: `a3_guild_${i}`,
+        const guildCards = gameData.guilds.map((g) => ({
+            id: g.id,
             title: g.title,
             type: g.desc,
             color: g.color,
