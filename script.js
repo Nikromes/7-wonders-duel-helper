@@ -42,7 +42,7 @@ function getCostHtml(costArray) {
         'глины': 'clay.png', 'глина': 'clay.png', 'глина x2': 'clay.png',
         'камня': 'stone.png', 'камень': 'stone.png', 'камень x2': 'stone.png',
         'стекла': 'glass.png', 'стекло': 'glass.png',
-        'папирус': 'papyrus.png',
+        'папирус': 'papyrus.png', 'папируса': 'papyrus.png',
         'монеты': 'coin.png', 'монета': 'coin.png',
         'оружия': 'shield.png', 'щит': 'shield.png'
     };
