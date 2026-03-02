@@ -120,7 +120,7 @@ const gameData = {
             { id: "a3_rd2", title: "Осадная мастерская", type: "2 Щита", color: "red", cost: ["3 Дерева", "1 Стекло"], chainReq: "Мишень" },
             { id: "a3_rd3", title: "Укрепления", type: "2 Щита", color: "red", cost: ["2 Камня", "1 Глина", "1 Папирус"], chainReq: "Башня" },
             { id: "a3_rd4", title: "Ипподром", type: "2 Щита", color: "red", cost: ["2 Глины", "2 Камня"], chainReq: "Шлем" },
-            { id: "a3_rd5", title: "Штаб", type: "3 Щита", color: "red", cost: ["8 Монет"] },
+            { id: "a3_rd5", title: "Штаб", type: "3 Щита", color: "red", cost: ["8 Монеты"] },
             { id: "a3_bl1", title: "Пантеон", type: "6 ПО", color: "blue", cost: ["1 Глина", "1 Дерево", "2 Папирус"], chainReq: "Солнце" },
             { id: "a3_bl2", title: "Сады", type: "6 ПО", color: "blue", cost: ["2 Глины", "2 Дерева"], chainReq: "Колонна" },
             { id: "a3_bl3", title: "Ратуша", type: "7 ПО", color: "blue", cost: ["3 Камня", "2 Дерева"] },

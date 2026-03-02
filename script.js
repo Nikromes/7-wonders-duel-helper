@@ -5,15 +5,8 @@ let searchQuery = '';
 let currentAge = '1';
 const removedCards = new Set();
 
-// Known card face images (cards that have face photos in assets/cards/faces/)
-const knownCardFaces = new Set([
-    'a1_br1', 'a1_br2', 'a1_br3', 'a1_br4', 'a1_br5', 'a1_br6',
-    'a1_gr1', 'a1_gr2',
-    'a1_rd1', 'a1_rd2', 'a1_rd3', 'a1_rd4',
-    'a1_bl1', 'a1_bl2', 'a1_bl3',
-    'a1_gn1', 'a1_gn2', 'a1_gn3', 'a1_gn4',
-    'a1_yl1', 'a1_yl2', 'a1_yl3', 'a1_yl4'
-]);
+// Loaded card faces (populated dynamically on init)
+const loadedCardFaces = new Set();
 
 // Global tooltip element
 let faceTooltip = null;
@@ -130,10 +123,56 @@ function getEffectHtml(effectStr) {
     return `<div class="effect-desc">${effectStr}</div>`;
 }
 
+// Internal helper to check if an image exists
+function checkImageExists(url) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+    });
+}
+
+// Pre-check all possible card face images
+async function loadAvailableFaces() {
+    const checks = [];
+
+    // Collect all card IDs from all ages
+    ['1', '2', '3'].forEach(age => {
+        if (gameData.predictorDeck[age]) {
+            gameData.predictorDeck[age].forEach(card => {
+                checks.push(
+                    checkImageExists(`assets/cards/faces/${card.id}.JPG`)
+                        .then(exists => { if (exists) loadedCardFaces.add(card.id); })
+                );
+            });
+        }
+    });
+
+    // Collect guild card IDs
+    if (gameData.guilds) {
+        gameData.guilds.forEach((g, i) => {
+            const guildId = `a3_guild_${i}`;
+            checks.push(
+                checkImageExists(`assets/cards/faces/${guildId}.JPG`)
+                    .then(exists => { if (exists) loadedCardFaces.add(guildId); })
+            );
+        });
+    }
+
+    // Wait for all checks to complete silently
+    await Promise.all(checks);
+    console.log(`Loaded ${loadedCardFaces.size} card face images dynamically.`);
+}
+
 // Init
-function init() {
+async function init() {
     setupEventListeners();
     initFaceTooltip();
+
+    // Dynamically check which photos exist before rendering
+    await loadAvailableFaces();
+
     renderItems();
     renderPredictor();
 }
@@ -393,7 +432,7 @@ function renderPredictor() {
 
         const cardEl = document.createElement('div');
         const colorClass = card.color ? `card-color-${card.color}` : '';
-        const hasFace = knownCardFaces.has(card.id);
+        const hasFace = loadedCardFaces.has(card.id);
         const usePhotoMode = photoMode && hasFace;
 
         cardEl.className = `board-card ${colorClass} ${isRemoved ? 'removed' : 'active-in-deck'}${usePhotoMode ? ' photo-mode' : ''}`;
