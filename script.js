@@ -5,6 +5,22 @@ let searchQuery = '';
 let currentAge = '1';
 const removedCards = new Set();
 
+// Known card face images (cards that have face photos in assets/cards/faces/)
+const knownCardFaces = new Set([
+    'a1_br1', 'a1_br2', 'a1_br3', 'a1_br4', 'a1_br5', 'a1_br6',
+    'a1_gr1', 'a1_gr2',
+    'a1_rd1', 'a1_rd2', 'a1_rd3', 'a1_rd4',
+    'a1_bl1', 'a1_bl2', 'a1_bl3',
+    'a1_gn1', 'a1_gn2', 'a1_gn3', 'a1_gn4',
+    'a1_yl1', 'a1_yl2', 'a1_yl3', 'a1_yl4'
+]);
+
+// Global tooltip element
+let faceTooltip = null;
+
+// Photo mode state
+let photoMode = false;
+
 // DOM Elements
 const navBtns = document.querySelectorAll('.nav-btn');
 const views = document.querySelectorAll('.view-section');
@@ -117,8 +133,55 @@ function getEffectHtml(effectStr) {
 // Init
 function init() {
     setupEventListeners();
+    initFaceTooltip();
     renderItems();
     renderPredictor();
+}
+
+// Create global tooltip element once
+function initFaceTooltip() {
+    faceTooltip = document.createElement('div');
+    faceTooltip.className = 'card-face-tooltip';
+    faceTooltip.innerHTML = '<img src="" alt="Card face">';
+    document.body.appendChild(faceTooltip);
+
+    // Hide on scroll
+    window.addEventListener('scroll', () => hideFaceTooltip(), { passive: true });
+    // Hide on click anywhere (mobile)
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card-preview-btn')) hideFaceTooltip();
+    });
+}
+
+function showFaceTooltip(cardId, anchorEl) {
+    const img = faceTooltip.querySelector('img');
+    img.src = `assets/cards/faces/${cardId}.JPG`;
+
+    // Position tooltip near the anchor button
+    const rect = anchorEl.getBoundingClientRect();
+    const tooltipWidth = 224; // img width + border
+    const tooltipHeight = 320; // approximate
+
+    let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+    let top = rect.bottom + 8;
+
+    // Keep within viewport horizontally
+    if (left < 8) left = 8;
+    if (left + tooltipWidth > window.innerWidth - 8) left = window.innerWidth - tooltipWidth - 8;
+
+    // If below viewport, show above
+    if (top + tooltipHeight > window.innerHeight - 8) {
+        top = rect.top - tooltipHeight - 8;
+    }
+    if (top < 8) top = 8;
+
+    faceTooltip.style.left = left + 'px';
+    faceTooltip.style.top = top + 'px';
+    faceTooltip.classList.add('visible');
+}
+
+function hideFaceTooltip() {
+    if (faceTooltip) faceTooltip.classList.remove('visible');
 }
 
 function setupEventListeners() {
@@ -172,6 +235,16 @@ function setupEventListeners() {
         searchQuery = e.target.value.toLowerCase().trim();
         renderItems();
     });
+
+    // Photo mode toggle
+    const photoModeBtn = document.getElementById('photoModeBtn');
+    if (photoModeBtn) {
+        photoModeBtn.addEventListener('click', () => {
+            photoMode = !photoMode;
+            photoModeBtn.classList.toggle('active', photoMode);
+            renderPredictor();
+        });
+    }
 }
 
 function renderItems() {
@@ -319,27 +392,64 @@ function renderPredictor() {
 
         const cardEl = document.createElement('div');
         const colorClass = card.color ? `card-color-${card.color}` : '';
-        cardEl.className = `board-card ${colorClass} ${isRemoved ? 'removed' : 'active-in-deck'}`;
+        const hasFace = knownCardFaces.has(card.id);
+        const usePhotoMode = photoMode && hasFace;
 
-        const hasCost = card.cost && card.cost.length > 0;
-        const costHtml = hasCost ? `<div class="card-info-badge cost-badge">${getCostHtml(card.cost)}</div>` : '';
-        const chainReqHtml = card.chainReq ? `<div class="card-info-badge chain-badge" title="Цепочка: ${card.chainReq}">🔗 ${card.chainReq}</div>` : '';
-        const chainGivesHtml = card.chainGiv ? `<div class="card-info-badge chain-gives-indicator" title="Даёт: ${card.chainGiv}">⛓ ${card.chainGiv}</div>` : '';
-        const hasInfoRow = hasCost || card.chainReq || card.chainGiv;
+        cardEl.className = `board-card ${colorClass} ${isRemoved ? 'removed' : 'active-in-deck'}${usePhotoMode ? ' photo-mode' : ''}`;
 
-        let bgImage = `${currentAge}-epoch.png`;
-        if (card.color === 'purple') bgImage = 'guild.png';
-        cardEl.style.backgroundImage = `url('assets/cards/${bgImage}')`;
+        if (usePhotoMode) {
+            // Photo mode: card is just the face image
+            cardEl.style.backgroundImage = `url('assets/cards/faces/${card.id}.JPG')`;
+            cardEl.innerHTML = '';
+        } else {
+            // Normal generated mode
+            const hasCost = card.cost && card.cost.length > 0;
+            const costHtml = hasCost ? `<div class="card-info-badge cost-badge">${getCostHtml(card.cost)}</div>` : '';
+            const chainReqHtml = card.chainReq ? `<div class="card-info-badge chain-badge" title="Цепочка: ${card.chainReq}">🔗 ${card.chainReq}</div>` : '';
+            const chainGivesHtml = card.chainGiv ? `<div class="card-info-badge chain-gives-indicator" title="Даёт: ${card.chainGiv}">⛓ ${card.chainGiv}</div>` : '';
+            const hasInfoRow = hasCost || card.chainReq || card.chainGiv;
 
-        cardEl.innerHTML = `
-            <div class="card-top-bar">
-                ${getEffectHtml(card.type)}
-            </div>
-            ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
-            <div class="card-bottom-strip">
-                <div class="card-title">${card.title}</div>
-            </div>
-        `;
+            let bgImage = `${currentAge}-epoch.png`;
+            if (card.color === 'purple') bgImage = 'guild.png';
+            cardEl.style.backgroundImage = `url('assets/cards/${bgImage}')`;
+
+            const previewBtnHtml = hasFace ? `
+                <button class="card-preview-btn" data-card-id="${card.id}" title="Посмотреть карту">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>` : '';
+
+            cardEl.innerHTML = `
+                ${previewBtnHtml}
+                <div class="card-top-bar">
+                    ${getEffectHtml(card.type)}
+                </div>
+                ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
+                <div class="card-bottom-strip">
+                    <div class="card-title">${card.title}</div>
+                </div>
+            `;
+        }
+
+        // Attach preview events if face exists and button is in DOM
+        if (hasFace && !usePhotoMode) {
+            const previewBtn = cardEl.querySelector('.card-preview-btn');
+            previewBtn.addEventListener('mouseenter', (e) => {
+                showFaceTooltip(card.id, previewBtn);
+            });
+            previewBtn.addEventListener('mouseleave', () => {
+                hideFaceTooltip();
+            });
+            // Prevent card toggle on preview button click
+            previewBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // On mobile, toggle tooltip on tap
+                if (faceTooltip.classList.contains('visible')) {
+                    hideFaceTooltip();
+                } else {
+                    showFaceTooltip(card.id, previewBtn);
+                }
+            });
+        }
 
         cardEl.addEventListener('click', () => {
             if (removedCards.has(card.id)) {

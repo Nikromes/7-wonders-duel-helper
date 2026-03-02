@@ -137,24 +137,61 @@ h1 {
 }
 
 /* ================================
-   SETTINGS
+   HEADER ICON BUTTONS (Fixed)
 ================================ */
-.settings-btn {
-    position: absolute;
+.header-icon-btn {
+    position: fixed;
     top: 12px;
-    right: 16px;
-    background: none;
-    border: none;
-    font-size: 22px;
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(24, 24, 32, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 20px;
     cursor: pointer;
-    opacity: 0.6;
-    transition: opacity var(--transition-base);
-    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    padding: 0;
+    line-height: 1;
 }
 
-.settings-btn:hover,
-.settings-btn:active {
-    opacity: 1;
+.header-icon-btn:hover,
+.header-icon-btn:active {
+    background: rgba(40, 40, 55, 0.95);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.header-icon-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.settings-btn {
+    right: 16px;
+}
+
+.photo-mode-header-btn {
+    right: 64px;
+}
+
+.photo-mode-header-btn.active {
+    background: rgba(124, 77, 255, 0.5);
+    color: #fff;
+    border-color: rgba(124, 77, 255, 0.6);
+    box-shadow: 0 2px 16px rgba(124, 77, 255, 0.35);
 }
 
 .settings-modal {
@@ -971,7 +1008,7 @@ h1 {
 /* Predictor List */
 .predictor-list {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin-top: 4px;
 }
@@ -1024,6 +1061,90 @@ h1 {
     height: 1.5px;
     background: rgba(239, 83, 80, 0.6);
     transform: translateY(-50%);
+}
+
+/* ================================
+   CARD FACE PREVIEW
+================================ */
+.card-preview-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 9;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    padding: 0;
+    line-height: 1;
+}
+
+.card-preview-btn:hover {
+    background: rgba(212, 175, 55, 0.35);
+    color: #fff;
+    border-color: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.3);
+    transform: scale(1.1);
+}
+
+.card-preview-btn:active {
+    transform: scale(0.95);
+}
+
+.card-preview-btn svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Tooltip */
+.card-face-tooltip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.6)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+}
+
+.card-face-tooltip.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+
+.card-face-tooltip img {
+    display: block;
+    width: 220px;
+    height: auto;
+    border-radius: 12px;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    background: var(--surface-color);
+}
+
+/* Mobile: larger centered image */
+@media (max-width: 600px) {
+    .card-face-tooltip img {
+        width: 260px;
+    }
 }
 
 /* ================================
@@ -1164,6 +1285,38 @@ h1 {
 
 .xray-btn svg {
     flex-shrink: 0;
+}
+
+/* ================================
+   PHOTO MODE CARD STYLES
+================================ */
+.board-card.photo-mode {
+    min-height: 0;
+    aspect-ratio: 2/3;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.board-card.photo-mode .card-top-bar,
+.board-card.photo-mode .card-info-row,
+.board-card.photo-mode .card-bottom-strip,
+.board-card.photo-mode .card-preview-btn {
+    display: none;
+}
+
+.board-card.photo-mode::before {
+    display: none;
+}
+
+.board-card.photo-mode::after {
+    background: none;
+}
+
+.board-card.photo-mode.removed::after {
+    background: rgba(0, 0, 0, 0.6);
 }
 
 /* ================================
