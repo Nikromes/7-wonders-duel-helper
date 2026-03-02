@@ -386,7 +386,7 @@ function initXray() {
 
         xrayCards.innerHTML = assigned.map((card, i) => {
             const pos = detectedPositions[i];
-            const imgSrc = `assets/cards/faces/${card.id}.JPG`;
+            const imgSrc = loadedCardFaces.get(card.id) || `assets/cards/faces/${card.id}.jpg`;
             return `
                 <div class="xray-card" style="left: ${pos.x}%; top: ${pos.y}%;">
                     <img class="xray-card-img" src="${imgSrc}" alt="${card.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">

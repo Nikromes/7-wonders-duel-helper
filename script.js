@@ -6,7 +6,8 @@ let currentAge = '1';
 const removedCards = new Set();
 
 // Loaded card faces (populated dynamically on init)
-const loadedCardFaces = new Set();
+// Maps card id -> correct path e.g. "assets/cards/faces/a1_br1.JPG"
+const loadedCardFaces = new Map();
 
 // Global tooltip element
 let faceTooltip = null;
@@ -127,10 +128,18 @@ function getEffectHtml(effectStr) {
 function checkImageExists(url) {
     return new Promise(resolve => {
         const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => resolve(false);
+        img.onload = () => resolve(url);
+        img.onerror = () => resolve(null);
         img.src = url;
     });
+}
+
+// Internal helper to try multiple extensions
+async function findImageExtension(basePath) {
+    const uppercase = await checkImageExists(`${basePath}.JPG`);
+    if (uppercase) return uppercase;
+    const lowercase = await checkImageExists(`${basePath}.jpg`);
+    return lowercase;
 }
 
 // Pre-check all possible card face images
@@ -142,8 +151,8 @@ async function loadAvailableFaces() {
         if (gameData.predictorDeck[age]) {
             gameData.predictorDeck[age].forEach(card => {
                 checks.push(
-                    checkImageExists(`assets/cards/faces/${card.id}.JPG`)
-                        .then(exists => { if (exists) loadedCardFaces.add(card.id); })
+                    findImageExtension(`assets/cards/faces/${card.id}`)
+                        .then(path => { if (path) loadedCardFaces.set(card.id, path); })
                 );
             });
         }
@@ -155,8 +164,8 @@ async function loadAvailableFaces() {
             gameData[category].forEach(item => {
                 if (item.id) {
                     checks.push(
-                        checkImageExists(`assets/cards/faces/${item.id}.JPG`)
-                            .then(exists => { if (exists) loadedCardFaces.add(item.id); })
+                        findImageExtension(`assets/cards/faces/${item.id}`)
+                            .then(path => { if (path) loadedCardFaces.set(item.id, path); })
                     );
                 }
             });
@@ -197,7 +206,10 @@ function initFaceTooltip() {
 
 function showFaceTooltip(cardId, anchorEl) {
     const img = faceTooltip.querySelector('img');
-    img.src = `assets/cards/faces/${cardId}.JPG`;
+    const path = loadedCardFaces.get(cardId);
+    if (path) {
+        img.src = path;
+    }
 
     // Position tooltip near the anchor button
     const rect = anchorEl.getBoundingClientRect();
@@ -385,7 +397,7 @@ function renderItems() {
 
         if (usePhotoMode) {
             // Photo mode: card is just the face image
-            card.style.backgroundImage = `url('assets/cards/faces/${item.id}.JPG')`;
+            card.style.backgroundImage = `url('${loadedCardFaces.get(item.id)}')`;
             card.style.backgroundSize = 'cover';
             card.innerHTML = '';
         } else {
@@ -476,7 +488,7 @@ function renderPredictor() {
 
         if (usePhotoMode) {
             // Photo mode: card is just the face image
-            cardEl.style.backgroundImage = `url('assets/cards/faces/${card.id}.JPG')`;
+            cardEl.style.backgroundImage = `url('${loadedCardFaces.get(card.id)}')`;
             cardEl.innerHTML = '';
         } else {
             // Normal generated mode
