@@ -479,7 +479,7 @@ h1 {
 }
 
 /* ================================
-   COLOR LEFT STRIP
+   COLOR TOP STRIP
 ================================ */
 .item-card::before,
 .board-card::before {
@@ -487,46 +487,45 @@ h1 {
     position: absolute;
     left: 0;
     top: 0;
-    bottom: 0;
-    width: 4px;
+    right: 0;
+    height: 5px;
     z-index: 5;
-    border-radius: 2px 0 0 2px;
 }
 
 .card-color-brown::before {
-    background: linear-gradient(180deg, var(--card-brown-light), var(--card-brown));
+    background: linear-gradient(90deg, var(--card-brown-light), var(--card-brown));
 }
 
 .card-color-gray::before {
-    background: linear-gradient(180deg, var(--card-gray-light), var(--card-gray));
+    background: linear-gradient(90deg, var(--card-gray-light), var(--card-gray));
 }
 
 .card-color-yellow::before {
-    background: linear-gradient(180deg, var(--card-yellow-light), var(--card-yellow));
+    background: linear-gradient(90deg, var(--card-yellow-light), var(--card-yellow));
 }
 
 .card-color-red::before {
-    background: linear-gradient(180deg, var(--card-red-light), var(--card-red));
+    background: linear-gradient(90deg, var(--card-red-light), var(--card-red));
 }
 
 .card-color-green::before {
-    background: linear-gradient(180deg, var(--card-green-light), var(--card-green));
+    background: linear-gradient(90deg, var(--card-green-light), var(--card-green));
 }
 
 .card-color-blue::before {
-    background: linear-gradient(180deg, var(--card-blue-light), var(--card-blue));
+    background: linear-gradient(90deg, var(--card-blue-light), var(--card-blue));
 }
 
 .card-color-purple::before {
-    background: linear-gradient(180deg, var(--card-purple-light), var(--card-purple));
+    background: linear-gradient(90deg, var(--card-purple-light), var(--card-purple));
 }
 
 .card-color-wonder::before {
-    background: linear-gradient(180deg, var(--card-wonder-light), var(--card-wonder));
+    background: linear-gradient(90deg, var(--card-wonder-light), var(--card-wonder));
 }
 
 .card-color-token::before {
-    background: linear-gradient(180deg, var(--card-token-light), var(--card-token));
+    background: linear-gradient(90deg, var(--card-token-light), var(--card-token));
 }
 
 /* Top glow variable */
