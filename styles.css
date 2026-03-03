@@ -1027,6 +1027,12 @@ h1 {
     margin-top: 4px;
 }
 
+@media (max-width: 600px) {
+    .predictor-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 /* Removed Section */
 .predictor-header-small {
     margin: 28px 0 14px;
