@@ -376,7 +376,8 @@ function renderItems() {
         const chainReqHtml = item.chainReq ? `<div class="card-info-badge chain-badge" title="Строится бесплатно при цепочке: ${item.chainReq}">🔗 ${item.chainReq}</div>` : '';
         const chainGivesHtml = item.chainGiv ? `<div class="card-info-badge chain-gives-indicator" title="Даёт символ: ${item.chainGiv}">⛓ ${item.chainGiv}</div>` : '';
 
-        const hasInfoRow = hasCost || item.chainReq || item.chainGiv;
+        const hasCostRow = hasCost;
+        const hasChainsRow = item.chainReq || item.chainGiv;
 
         const categoryLabel = searchQuery.length > 0 ?
             `<div class="item-category-label">${categoryNames[item.category] || item.category}</div>` : '';
@@ -411,7 +412,8 @@ function renderItems() {
                 <div class="card-top-bar">
                     ${getEffectHtml(item.desc || item.type || '')}
                 </div>
-                ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
+                ${hasChainsRow ? `<div class="card-chains-row">${chainReqHtml}${chainGivesHtml}</div>` : ''}
+                ${hasCostRow ? `<div class="card-info-row">${costHtml}</div>` : ''}
                 ${categoryLabel}
                 <div class="card-bottom-strip">
                     <div class="card-title">${item.title}</div>
@@ -496,7 +498,8 @@ function renderPredictor() {
             const costHtml = hasCost ? `<div class="card-info-badge cost-badge">${getCostHtml(card.cost)}</div>` : '';
             const chainReqHtml = card.chainReq ? `<div class="card-info-badge chain-badge" title="Цепочка: ${card.chainReq}">🔗 ${card.chainReq}</div>` : '';
             const chainGivesHtml = card.chainGiv ? `<div class="card-info-badge chain-gives-indicator" title="Даёт: ${card.chainGiv}">⛓ ${card.chainGiv}</div>` : '';
-            const hasInfoRow = hasCost || card.chainReq || card.chainGiv;
+            const hasCostRow = hasCost;
+            const hasChainsRow = card.chainReq || card.chainGiv;
 
             let bgImage = `${currentAge}-epoch.png`;
             if (card.color === 'purple') bgImage = 'guild.png';
@@ -512,7 +515,8 @@ function renderPredictor() {
                 <div class="card-top-bar">
                     ${getEffectHtml(card.type)}
                 </div>
-                ${hasInfoRow ? `<div class="card-info-row">${costHtml}${chainReqHtml}${chainGivesHtml}</div>` : ''}
+                ${hasChainsRow ? `<div class="card-chains-row">${chainReqHtml}${chainGivesHtml}</div>` : ''}
+                ${hasCostRow ? `<div class="card-info-row">${costHtml}</div>` : ''}
                 <div class="card-bottom-strip">
                     <div class="card-title">${card.title}</div>
                 </div>

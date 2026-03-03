@@ -102,7 +102,7 @@ const gameData = {
             { id: "a2_rd5", title: "Площадь", type: "2 Щита", color: "red", cost: ["2 Глины", "1 Стекло"], chainGiv: "Шлем" },
             { id: "a2_bl1", title: "Акведук", type: "5 ПО", color: "blue", cost: ["3 Камня"], chainReq: "Капля" },
             { id: "a2_bl2", title: "Храм", type: "4 ПО", color: "blue", cost: ["1 Дерево", "1 Папирус"], chainReq: "Месяц", chainGiv: "Колонна" },
-            { id: "a2_bl3", title: "Статуя", type: "4 ПО", color: "blue", cost: ["2 Глины"], chainReq: "Маска", chainGiv: "Сады" },
+            { id: "a2_bl3", title: "Статуя", type: "4 ПО", color: "blue", cost: ["2 Глины"], chainReq: "Маска", chainGiv: "Колонна" },
             { id: "a2_bl4", title: "Трибуна", type: "4 ПО", color: "blue", cost: ["1 Камень", "1 Дерево"], chainGiv: "Домик" },
             { id: "a2_bl5", title: "Суд", type: "5 ПО", color: "blue", cost: ["2 Дерева", "1 Стекло"] },
             { id: "a2_gn1", title: "Лаборатория", type: "Наука (Треугольник) + 1 ПО", color: "green", cost: ["1 Дерево", "2 Стекло"], chainGiv: "Чайник" },
