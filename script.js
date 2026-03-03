@@ -385,6 +385,7 @@ function renderItems() {
         let bgImage = 'wonder.png';
         if (item.category === 'guilds') bgImage = 'guild.png';
         else if (item.age) bgImage = `${item.age}-epoch.png`;
+        else if (item.category && item.category.startsWith('age')) bgImage = `${item.category.slice(3)}-epoch.png`;
         else if (item.category === 'tokens') bgImage = '';
 
         let styleStr = `animation-delay: ${index * 0.05}s`;
