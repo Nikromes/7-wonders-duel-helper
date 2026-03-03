@@ -170,10 +170,48 @@
         <div class="xray-overlay" id="xrayOverlay">
             <video class="xray-video" id="xrayVideo" autoplay playsinline muted></video>
             <canvas class="xray-canvas" id="xrayCanvas"></canvas>
+
+            <!-- Manual Wireframe Container -->
+            <div class="xray-wireframe-container" id="xrayWireframeContainer" style="display:none;">
+                <div class="xray-wireframe" id="xrayWireframe">
+                    <!-- Wireframe cards injected by JS -->
+                </div>
+            </div>
+
             <div class="xray-stats" id="xrayStats"></div>
             <div class="xray-cards" id="xrayCards"></div>
+
+            <!-- Pre-analysis mode selection -->
+            <div class="xray-pre-actions" id="xrayPreActions" style="display:none;">
+                <h3 class="xray-pre-title">Выберите метод анализа</h3>
+                <div class="xray-pre-buttons">
+                    <button class="xray-pre-btn ai" id="xrayBtnAi">
+                        <span class="icon">✨</span>
+                        <div class="text-block">
+                            <span class="title">Анализируй ИИ</span>
+                            <span class="desc">Автоматическое распознавание</span>
+                        </div>
+                    </button>
+                    <button class="xray-pre-btn manual" id="xrayBtnManual">
+                        <span class="icon">📐</span>
+                        <div class="text-block">
+                            <span class="title">Ручная сетка</span>
+                            <span class="desc">Совместить шаблон самому</span>
+                        </div>
+                    </button>
+                    <button class="xray-cancel-btn" id="xrayPreCancelBtn">Отмена</button>
+                </div>
+            </div>
+
             <div class="xray-controls">
-                <button class="xray-capture-btn" id="xrayCaptureBtn">📸 Сканировать</button>
+                <button class="xray-capture-btn" id="xrayCaptureBtn">📸 Сделать фото</button>
+                <div class="xray-manual-controls" id="xrayManualControls" style="display:none;">
+                    <div class="xray-scale-wrapper">
+                        <label for="xrayScaleSlider">🔎 Масштаб:</label>
+                        <input type="range" id="xrayScaleSlider" min="50" max="400" value="100">
+                    </div>
+                    <button class="xray-confirm-btn" id="xrayConfirmBtn">✅ Подтвердить позицию</button>
+                </div>
                 <button class="xray-reshuffle-btn" id="xrayReshuffleBtn" style="display:none">🔀 Перемешать</button>
             </div>
             <button class="xray-close-btn" id="xrayCloseBtn">✕</button>

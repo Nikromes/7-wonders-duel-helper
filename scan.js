@@ -338,13 +338,63 @@ function initXray() {
     const xrayCaptureBtn = document.getElementById('xrayCaptureBtn');
     const xrayReshuffleBtn = document.getElementById('xrayReshuffleBtn');
 
+    // Manual X-Ray UI Elements
+    const xrayPreActions = document.getElementById('xrayPreActions');
+    const xrayBtnAi = document.getElementById('xrayBtnAi');
+    const xrayBtnManual = document.getElementById('xrayBtnManual');
+    const xrayPreCancelBtn = document.getElementById('xrayPreCancelBtn');
+    const xrayWireframeContainer = document.getElementById('xrayWireframeContainer');
+    const xrayWireframe = document.getElementById('xrayWireframe');
+    const xrayManualControls = document.getElementById('xrayManualControls');
+    const xrayScaleSlider = document.getElementById('xrayScaleSlider');
+    const xrayConfirmBtn = document.getElementById('xrayConfirmBtn');
+
     let xrayStream = null;
-    let detectedPositions = []; // [{x: %, y: %}, ...] from AI
+    let detectedPositions = []; // [{x: %, y: %}, ...] from AI or Manual
     let hiddenCards = [];       // cards not in removedCards
+    let pendingFrameDataUrl = null; // Stores captured image for passing to AI mode
+    let manualScale = 1.0;
+    let manualOffset = { x: 0, y: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
 
     const colorMap = {
         brown: '#8d6e4a', gray: '#9e9e9e', red: '#e53935',
         blue: '#42a5f5', green: '#66bb6a', yellow: '#fdd835', purple: '#ab47bc'
+    };
+
+    // Card dimensions ratio in wireframe (approx 7 Wonders Duel card ratio)
+    const cardW = 44;
+    const cardH = 68;
+    const gapX = 10;
+    const gapY = 24;
+
+    // Layout Definitions. Coordinates in logical units (card widths/heights and gaps) relative to grid center (0,0).
+    // 'fd': true = face-down (closed card), false = face-up (open card)
+    const gridLayouts = {
+        '1': [
+            { row: -2, col: -0.5, fd: false }, { row: -2, col: 0.5, fd: false },
+            { row: -1, col: -1, fd: true }, { row: -1, col: 0, fd: true }, { row: -1, col: 1, fd: true },
+            { row: 0, col: -1.5, fd: false }, { row: 0, col: -0.5, fd: false }, { row: 0, col: 0.5, fd: false }, { row: 0, col: 1.5, fd: false },
+            { row: 1, col: -2, fd: true }, { row: 1, col: -1, fd: true }, { row: 1, col: 0, fd: true }, { row: 1, col: 1, fd: true }, { row: 1, col: 2, fd: true },
+            { row: 2, col: -2.5, fd: false }, { row: 2, col: -1.5, fd: false }, { row: 2, col: -0.5, fd: false }, { row: 2, col: 0.5, fd: false }, { row: 2, col: 1.5, fd: false }, { row: 2, col: 2.5, fd: false }
+        ],
+        '2': [
+            { row: -2, col: -2.5, fd: false }, { row: -2, col: -1.5, fd: false }, { row: -2, col: -0.5, fd: false }, { row: -2, col: 0.5, fd: false }, { row: -2, col: 1.5, fd: false }, { row: -2, col: 2.5, fd: false },
+            { row: -1, col: -2, fd: true }, { row: -1, col: -1, fd: true }, { row: -1, col: 0, fd: true }, { row: -1, col: 1, fd: true }, { row: -1, col: 2, fd: true },
+            { row: 0, col: -1.5, fd: false }, { row: 0, col: -0.5, fd: false }, { row: 0, col: 0.5, fd: false }, { row: 0, col: 1.5, fd: false },
+            { row: 1, col: -1, fd: true }, { row: 1, col: 0, fd: true }, { row: 1, col: 1, fd: true },
+            { row: 2, col: -0.5, fd: false }, { row: 2, col: 0.5, fd: false }
+        ],
+        '3': [
+            { row: -3, col: -0.5, fd: false }, { row: -3, col: 0.5, fd: false },
+            { row: -2, col: -1, fd: true }, { row: -2, col: 0, fd: true }, { row: -2, col: 1, fd: true },
+            { row: -1, col: -1.5, fd: false }, { row: -1, col: -0.5, fd: false }, { row: -1, col: 0.5, fd: false }, { row: -1, col: 1.5, fd: false },
+            { row: 0, col: -1, fd: true }, { row: 0, col: 0, fd: false }, { row: 0, col: 1, fd: true },
+            { row: 1, col: -1.5, fd: false }, { row: 1, col: -0.5, fd: false }, { row: 1, col: 0.5, fd: false }, { row: 1, col: 1.5, fd: false },
+            { row: 2, col: -1, fd: true }, { row: 2, col: 0, fd: true }, { row: 2, col: 1, fd: true },
+            { row: 3, col: -0.5, fd: false }, { row: 3, col: 0.5, fd: false }
+        ]
     };
 
     function getHiddenCards() {
@@ -387,8 +437,12 @@ function initXray() {
         xrayCards.innerHTML = assigned.map((card, i) => {
             const pos = detectedPositions[i];
             const imgSrc = loadedCardFaces.get(card.id) || `assets/cards/faces/${card.id}.jpg`;
+
+            // Если pos.w существует (снято в ручном режиме), применяем ширину
+            const widthStyle = pos.w ? `width: ${pos.w}%;` : '';
+
             return `
-                <div class="xray-card" style="left: ${pos.x}%; top: ${pos.y}%;">
+                <div class="xray-card" style="left: ${pos.x}%; top: ${pos.y}%; ${widthStyle}">
                     <img class="xray-card-img" src="${imgSrc}" alt="${card.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
                     <div class="xray-card-fallback" style="display:none;">
                         <div class="xray-card-title">${card.title}</div>
@@ -549,13 +603,151 @@ function initXray() {
         xrayVideo.style.display = '';
     }
 
+    function renderManualWireframe() {
+        const layout = gridLayouts[currentAge] || [];
+        xrayWireframe.innerHTML = layout.map(card => {
+            const left = card.col * (cardW + gapX);
+            const top = card.row * (cardH + gapY * 0.5); // overlapping rows
+            const classes = `wireframe-card ${card.fd ? 'wireframe-fd' : ''}`;
+            // Store relative logical position in data attributes for extraction later
+            return `<div class="${classes}" style="width:${cardW}px; height:${cardH}px; left:${left}px; top:${top}px;" data-fd="${card.fd}"></div>`;
+        }).join('');
+    }
+
+    function startManualXray() {
+        xrayStats.innerHTML = `
+            <div class="xray-stats-line">📐 Совместите сетку с фото</div>
+            <div class="xray-stats-sub">Двигайте сетку пальцем. Внизу можно менять масштаб.</div>
+        `;
+
+        xrayWireframeContainer.style.display = 'flex';
+        xrayManualControls.style.display = 'flex';
+
+        // Reset scale and offset
+        manualScale = 1.0;
+        xrayScaleSlider.value = 100;
+        manualOffset = { x: 0, y: 0 };
+        updateWireframeTransform();
+        renderManualWireframe();
+
+        // Optional logic: if the user hasn't selected anything for AI before...
+        // We'll rely on confirm to populate detectedPositions.
+    }
+
+    // --- Drag and Scale Logic ---
+    function updateWireframeTransform() {
+        xrayWireframe.style.transform = `translate(${manualOffset.x}px, ${manualOffset.y}px) scale(${manualScale})`;
+    }
+
+    xrayScaleSlider.addEventListener('input', (e) => {
+        manualScale = parseInt(e.target.value, 10) / 100;
+        updateWireframeTransform();
+    });
+
+    // Touch/Mouse events on container
+    function handleDragStart(e) {
+        if (xrayWireframeContainer.style.display === 'none') return;
+        if (e.target.closest('.xray-controls') || e.target.closest('.xray-manual-controls')) return;
+        isDragging = true;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        dragStart = { x: clientX - manualOffset.x, y: clientY - manualOffset.y };
+    }
+
+    function handleDragMove(e) {
+        if (!isDragging) return;
+        e.preventDefault(); // prevent scrolling
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        manualOffset.x = clientX - dragStart.x;
+        manualOffset.y = clientY - dragStart.y;
+        updateWireframeTransform();
+    }
+
+    function handleDragEnd() {
+        isDragging = false;
+    }
+
+    xrayOverlay.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+
+    xrayOverlay.addEventListener('touchstart', handleDragStart, { passive: false });
+    document.addEventListener('touchmove', handleDragMove, { passive: false });
+    document.addEventListener('touchend', handleDragEnd);
+
+    // --- Confirm Manual Layout ---
+    xrayConfirmBtn.addEventListener('click', () => {
+        // Calculate logic logical percentages BEFORE hiding UI
+        const canvasRect = xrayCanvas.getBoundingClientRect();
+        const fdcards = xrayWireframe.querySelectorAll('.wireframe-fd');
+        const positions = [];
+
+        fdcards.forEach((cardEl) => {
+            const rect = cardEl.getBoundingClientRect();
+            // Calculate absolute visual center of the card
+            const centerX = rect.left + rect.width / 2 - canvasRect.left;
+            const centerY = rect.top + rect.height / 2 - canvasRect.top;
+
+            const posX = (centerX / canvasRect.width) * 100;
+            const posY = (centerY / canvasRect.height) * 100;
+
+            // Высчитываем ширину карточки в процентах относительно экрана
+            const posW = (rect.width / canvasRect.width) * 100;
+
+            positions.push({ x: posX, y: posY, w: posW });
+        });
+
+        // Add small random noise to positions to avoid stacking if overlapping
+        detectedPositions = positions.map(p => ({
+            x: Math.max(0, Math.min(100, p.x)),
+            y: Math.max(0, Math.min(100, p.y)),
+            w: p.w
+        }));
+
+        xrayWireframeContainer.style.display = 'none';
+        xrayManualControls.style.display = 'none';
+
+        xrayStats.innerHTML = `
+            <div class="xray-stats-line">✅ Позиции подтверждены</div>
+            <div class="xray-stats-sub">Раскладываю предсказания...</div>
+        `;
+
+        console.log(`X-Ray (Manual): confirmed ${detectedPositions.length} face-down cards`);
+
+        renderOverlayCards();
+        xrayReshuffleBtn.style.display = '';
+    });
+
+    closeXray = function closeXrayLocal() {
+        stopCamera();
+        xrayOverlay.classList.remove('active');
+        xrayCards.innerHTML = '';
+        xrayCanvas.classList.remove('active');
+        xrayVideo.style.display = '';
+        xrayWireframeContainer.style.display = 'none';
+        xrayManualControls.style.display = 'none';
+        xrayPreActions.style.display = 'none';
+    };
+
     // Shared analysis function — takes dataUrl, detects positions, renders cards
     async function analyzeFrame(frameDataUrl) {
         xrayCaptureBtn.textContent = '⏳ Анализ...';
         xrayCaptureBtn.disabled = true;
 
+        // Check API key first for AI mode
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line" style="color:#ef5350;">❌ API-ключ не установлен</div>
+                <div class="xray-stats-sub">Полный X-Ray доступен только с API-ключом Gemini</div>
+            `;
+            xrayCaptureBtn.textContent = isMobile ? '📸 Сделать фото' : '📁 Выбрать фото';
+            xrayCaptureBtn.disabled = false;
+            return;
+        }
+
         try {
-            // Draw image on canvas
             xrayCanvas.classList.add('active');
             xrayVideo.style.display = 'none';
             stopCamera();
@@ -577,7 +769,7 @@ function initXray() {
                     xrayVideo.style.display = '';
                     startCamera();
                 }
-                xrayCaptureBtn.textContent = isMobile ? '📸 Сканировать' : '📁 Выбрать фото';
+                xrayCaptureBtn.textContent = isMobile ? '📸 Сделать фото' : '📁 Выбрать фото';
                 xrayCaptureBtn.disabled = false;
                 return;
             }
@@ -602,20 +794,81 @@ function initXray() {
             }
         }
 
-        xrayCaptureBtn.textContent = isMobile ? '📸 Сканировать' : '📁 Выбрать фото';
+        xrayCaptureBtn.textContent = isMobile ? '📸 Сделать фото' : '📁 Выбрать фото';
         xrayCaptureBtn.disabled = false;
     }
 
-    async function onCapture() {
-        // Check API key first
-        const apiKey = getApiKey();
-        if (!apiKey) {
-            xrayStats.innerHTML = `
-                <div class="xray-stats-line" style="color:#ef5350;">❌ API-ключ не установлен</div>
-                <div class="xray-stats-sub">Закройте X-Ray → нажмите ⚙️ → введите ключ</div>
-            `;
-            return;
+    function showPreActions(dataUrl) {
+        pendingFrameDataUrl = dataUrl;
+        xrayCaptureBtn.style.display = 'none';
+
+        // Draw image initially as background
+        xrayCanvas.classList.add('active');
+        xrayVideo.style.display = 'none';
+        stopCamera();
+
+        const img = new Image();
+        img.onload = () => {
+            xrayCanvas.width = img.width;
+            xrayCanvas.height = img.height;
+            const ctx = xrayCanvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+        };
+        img.src = dataUrl;
+
+        xrayStats.innerHTML = `
+            <div class="xray-stats-line">📸 Фото получено</div>
+            <div class="xray-stats-sub">Выберите способ поиска закрытых карт</div>
+        `;
+
+        xrayPreActions.style.display = 'flex';
+    }
+
+    xrayBtnAi.addEventListener('click', async () => {
+        xrayPreActions.style.display = 'none';
+        if (pendingFrameDataUrl) {
+            await analyzeFrame(pendingFrameDataUrl);
         }
+    });
+
+    xrayBtnManual.addEventListener('click', () => {
+        xrayPreActions.style.display = 'none';
+        if (pendingFrameDataUrl) {
+            startManualXray();
+        }
+    });
+
+    xrayPreCancelBtn.addEventListener('click', () => {
+        xrayPreActions.style.display = 'none';
+        pendingFrameDataUrl = null;
+        xrayCanvas.classList.remove('active');
+
+        xrayCaptureBtn.style.display = '';
+        xrayCaptureBtn.textContent = isMobile ? '📸 Сканировать' : '📁 Выбрать фото';
+
+        const ageLabel = currentAge === '1' ? 'I' : currentAge === '2' ? 'II' : 'III';
+
+        if (isMobile) {
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
+                <div class="xray-stats-line">Скрытых карт: ${hiddenCards.length}</div>
+                <div class="xray-stats-sub">Наведите камеру на стол и нажмите 📸</div>
+            `;
+            xrayVideo.style.display = '';
+            startCamera();
+        } else {
+            xrayStats.innerHTML = `
+                <div class="xray-stats-line">🔮 X-Ray · Эпоха ${ageLabel}</div>
+                <div class="xray-stats-line">Скрытых карт: ${hiddenCards.length}</div>
+                <div class="xray-stats-sub">Выберите фото раскладки на столе</div>
+            `;
+            xrayVideo.style.display = 'none';
+        }
+    });
+
+    async function onCapture() {
+        // Check API key first if we want strict enforcement, but for manual mode it's not strictly necessary.
+        // We defer API check to AI analysis mode start.
 
         if (isMobile) {
             // Mobile: capture from camera
@@ -628,7 +881,7 @@ function initXray() {
             }
             const frameDataUrl = captureFrame();
             console.log('X-Ray: frame captured, size:', frameDataUrl.length, 'video:', xrayVideo.videoWidth, 'x', xrayVideo.videoHeight);
-            await analyzeFrame(frameDataUrl);
+            showPreActions(frameDataUrl);
         } else {
             // Desktop: open file picker
             xrayFileInput.click();
@@ -642,20 +895,9 @@ function initXray() {
         xrayFileInput.value = '';
 
         const reader = new FileReader();
-        reader.onload = async (ev) => {
+        reader.onload = (ev) => {
             const dataUrl = ev.target.result;
-
-            // Draw on canvas for visual background
-            const img = new Image();
-            img.onload = async () => {
-                xrayCanvas.width = img.width;
-                xrayCanvas.height = img.height;
-                const ctx = xrayCanvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                console.log('X-Ray: file loaded, size:', img.width, 'x', img.height);
-                await analyzeFrame(dataUrl);
-            };
-            img.src = dataUrl;
+            showPreActions(dataUrl);
         };
         reader.readAsDataURL(file);
     });

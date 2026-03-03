@@ -1464,6 +1464,136 @@ h1 {
     line-height: 1.3;
 }
 
+/* ================================
+   X-RAY MANUAL WIREFRAME
+================================ */
+.xray-wireframe-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    /* Let dragging happen on document/container level */
+}
+
+.xray-wireframe {
+    position: relative;
+    transform-origin: center center;
+    /* Will be updated via JS for moving and scaling */
+}
+
+.wireframe-card {
+    position: absolute;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+}
+
+.wireframe-card.wireframe-fd {
+    border-color: rgba(212, 175, 55, 0.8);
+    background: rgba(212, 175, 55, 0.3);
+}
+
+/* ================================
+   X-RAY PRE-ACTIONS (MODE SELECT)
+================================ */
+.xray-pre-actions {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 20px;
+}
+
+.xray-pre-title {
+    font-family: var(--font-heading);
+    color: var(--primary-color);
+    font-size: 20px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.xray-pre-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.xray-pre-btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--surface-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-align: left;
+}
+
+.xray-pre-btn:active {
+    transform: scale(0.97);
+}
+
+.xray-pre-btn.ai {
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 96, 100, 0.3));
+    border-color: rgba(0, 188, 212, 0.4);
+}
+
+.xray-pre-btn.manual {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(168, 140, 40, 0.3));
+    border-color: rgba(212, 175, 55, 0.4);
+}
+
+.xray-pre-btn .icon {
+    font-size: 24px;
+}
+
+.xray-pre-btn .title {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.xray-pre-btn .desc {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.xray-cancel-btn {
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ================================
+   X-RAY CONTROLS
+================================ */
 .xray-controls {
     position: fixed;
     bottom: 20px;
@@ -1471,7 +1601,68 @@ h1 {
     transform: translateX(-50%);
     z-index: 5;
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 0 16px;
+}
+
+.xray-controls>button,
+.xray-controls>div {
+    display: flex;
     gap: 8px;
+    justify-content: center;
+}
+
+.xray-manual-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 320px;
+}
+
+.xray-scale-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.xray-scale-wrapper input[type=range] {
+    flex: 1;
+    accent-color: var(--primary-color);
+}
+
+.xray-confirm-btn {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: #1a0f00;
+    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.4);
+    transition: all var(--transition-base);
+}
+
+.xray-confirm-btn:active {
+    transform: scale(0.95);
 }
 
 .xray-capture-btn,
@@ -1745,4 +1936,57 @@ h1 {
     .board-card {
         min-height: 180px;
     }
+}/* ================================
+   X-RAY REMAINING
+================================ */
+.xray-remaining-container {
+    width: 60%;
+    margin: max(12px, env(safe-area-inset-top)) auto 8px auto;
+    background: rgba(10, 8, 22, 0.95);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: var(--radius-lg);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+}
+
+.xray-remaining-title {
+    color: var(--primary-color);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.xray-remaining-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    justify-content: center;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.xray-remaining-list::-webkit-scrollbar {
+    width: 4px;
+}
+.xray-remaining-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+}
+
+.remaining-minicard {
+    width: 44px;
+    height: 68px;
+    border-radius: 4px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--surface-color);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
