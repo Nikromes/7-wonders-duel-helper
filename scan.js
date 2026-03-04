@@ -366,8 +366,8 @@ function initXray() {
     // Card dimensions ratio in wireframe (approx 7 Wonders Duel card ratio)
     const cardW = 44;
     const cardH = 68;
-    const gapX = 10;
-    const gapY = 24;
+    const gapX = 10;   // slight horizontal overlap between adjacent cards
+    const rowStep = 40; // ~50% vertical overlap between rows
 
     // Layout Definitions. Coordinates in logical units (card widths/heights and gaps) relative to grid center (0,0).
     // 'fd': true = face-down (closed card), false = face-up (open card)
@@ -641,10 +641,10 @@ function initXray() {
         const layout = gridLayouts[currentAge] || [];
         xrayWireframe.innerHTML = layout.map(card => {
             const left = card.col * (cardW + gapX);
-            const top = card.row * (cardH + gapY * 0.5); // overlapping rows
+            const top = card.row * rowStep;
+            const zIdx = 10 + card.row; // higher rows render on top
             const classes = `wireframe-card ${card.fd ? 'wireframe-fd' : ''}`;
-            // Store relative logical position in data attributes for extraction later
-            return `<div class="${classes}" style="width:${cardW}px; height:${cardH}px; left:${left}px; top:${top}px;" data-fd="${card.fd}"></div>`;
+            return `<div class="${classes}" style="width:${cardW}px; height:${cardH}px; left:${left}px; top:${top}px; z-index:${zIdx};" data-fd="${card.fd}"></div>`;
         }).join('');
     }
 
