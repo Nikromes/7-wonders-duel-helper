@@ -1346,7 +1346,7 @@ h1 {
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: #000;
+    background: #050810;
 }
 
 .xray-overlay.active {
@@ -1363,41 +1363,130 @@ h1 {
     z-index: 0;
 }
 
+/* --- Stats bar (top HUD) --- */
 .xray-stats {
     position: relative;
-    z-index: 2;
-    padding: 12px 16px;
-    padding-top: max(12px, env(safe-area-inset-top));
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+    z-index: 4;
+    padding: 14px 56px 10px 16px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    background: linear-gradient(180deg,
+            rgba(5, 8, 16, 0.88) 0%,
+            rgba(5, 8, 16, 0.65) 70%,
+            transparent 100%);
     color: #fff;
     font-family: var(--font-body);
     font-size: 13px;
     font-weight: 600;
     text-align: center;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
 }
 
 .xray-stats .xray-stats-line {
-    margin-bottom: 2px;
+    margin-bottom: 3px;
+    letter-spacing: 0.2px;
+}
+
+.xray-stats .xray-stats-line:first-child {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    color: #00e5ff;
+    letter-spacing: 0.6px;
 }
 
 .xray-stats .xray-stats-sub {
     font-size: 11px;
     font-weight: 400;
-    opacity: 0.7;
+    opacity: 0.55;
+    margin-top: 2px;
 }
 
+/* --- Card glow animation --- */
 @keyframes xrayPulse {
 
     0%,
     100% {
-        opacity: 0.7;
-        border-color: rgba(0, 188, 212, 0.2);
+        opacity: 0.75;
+        border-color: rgba(0, 229, 255, 0.2);
+        box-shadow: 0 2px 12px rgba(0, 229, 255, 0.15), 0 0 20px rgba(0, 229, 255, 0.08);
     }
 
     50% {
-        opacity: 0.95;
-        border-color: rgba(0, 188, 212, 0.5);
+        opacity: 1;
+        border-color: rgba(0, 229, 255, 0.55);
+        box-shadow: 0 2px 16px rgba(0, 229, 255, 0.35), 0 0 28px rgba(0, 229, 255, 0.18);
+    }
+}
+
+@keyframes xrayFloat {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) translateY(0);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) translateY(-2px);
+    }
+}
+
+/* X-Ray scan reveal animation */
+@keyframes xrayScanReveal {
+    0% {
+        opacity: 0;
+        clip-path: inset(0 0 100% 0);
+        filter: brightness(2.5) saturate(0) drop-shadow(0 0 8px rgba(0, 229, 255, 0.8));
+    }
+
+    35% {
+        opacity: 1;
+        clip-path: inset(0 0 50% 0);
+        filter: brightness(2) saturate(0.3) drop-shadow(0 0 12px rgba(0, 229, 255, 0.6));
+    }
+
+    70% {
+        clip-path: inset(0 0 0% 0);
+        filter: brightness(1.3) saturate(0.7) drop-shadow(0 0 6px rgba(0, 229, 255, 0.3));
+    }
+
+    100% {
+        opacity: 1;
+        clip-path: inset(0 0 0% 0);
+        filter: brightness(1) saturate(1) drop-shadow(0 0 0 transparent);
+    }
+}
+
+.xray-card.scanning {
+    animation: xrayScanReveal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    border-color: rgba(0, 229, 255, 0.7);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4), 0 0 40px rgba(0, 229, 255, 0.15);
+}
+
+.xray-card.scanning::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+    z-index: 10;
+    animation: scanLine 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes scanLine {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+
+    80% {
+        top: 100%;
+        opacity: 0.8;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
     }
 }
 
@@ -1415,6 +1504,7 @@ h1 {
     display: block;
 }
 
+/* --- Overlay cards on the grid --- */
 .xray-cards {
     position: absolute;
     inset: 0;
@@ -1427,11 +1517,12 @@ h1 {
     width: 80px;
     border-radius: 8px;
     overflow: hidden;
-    border: 2px solid rgba(0, 188, 212, 0.5);
-    animation: xrayPulse 2.5s ease-in-out infinite;
+    border: 2px solid rgba(0, 229, 255, 0.45);
+    animation: xrayPulse 3s ease-in-out infinite, xrayFloat 4s ease-in-out infinite;
     transform: translate(-50%, -50%);
     pointer-events: auto;
-    box-shadow: 0 2px 12px rgba(0, 188, 212, 0.3), 0 0 20px rgba(0, 188, 212, 0.15);
+    box-shadow: 0 2px 12px rgba(0, 229, 255, 0.25), 0 0 24px rgba(0, 229, 255, 0.1);
+    transition: transform 0.25s ease;
 }
 
 .xray-card-img {
@@ -1443,7 +1534,7 @@ h1 {
 
 .xray-card-fallback {
     padding: 8px 4px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(5, 8, 16, 0.85);
     text-align: center;
 }
 
@@ -1460,7 +1551,7 @@ h1 {
 .xray-card-info {
     font-family: var(--font-body);
     font-size: 7px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.5);
     line-height: 1.3;
 }
 
@@ -1475,28 +1566,28 @@ h1 {
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    /* Let dragging happen on document/container level */
 }
 
 .xray-wireframe {
     position: relative;
     transform-origin: center center;
-    /* Will be updated via JS for moving and scaling */
 }
 
 .wireframe-card {
     position: absolute;
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.35);
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
     transform: translate(-50%, -50%);
     box-sizing: border-box;
+    transition: border-color 0.3s, background 0.3s;
 }
 
 .wireframe-card.wireframe-fd {
-    border-color: rgba(212, 175, 55, 0.8);
-    background: rgba(212, 175, 55, 0.3);
+    border-color: rgba(0, 229, 255, 0.7);
+    background: rgba(0, 229, 255, 0.12);
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.15);
 }
 
 /* ================================
@@ -1510,24 +1601,25 @@ h1 {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(5, 8, 16, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 20px;
 }
 
 .xray-pre-title {
     font-family: var(--font-heading);
-    color: var(--primary-color);
+    color: #00e5ff;
     font-size: 20px;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
     text-align: center;
+    text-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
 }
 
 .xray-pre-buttons {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     width: 100%;
     max-width: 300px;
 }
@@ -1537,9 +1629,9 @@ h1 {
     align-items: center;
     gap: 16px;
     padding: 16px 20px;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
-    background: var(--surface-color);
+    background: rgba(255, 255, 255, 0.04);
     color: var(--text-primary);
     cursor: pointer;
     transition: all var(--transition-base);
@@ -1551,23 +1643,33 @@ h1 {
 }
 
 .xray-pre-btn.ai {
-    background: linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 96, 100, 0.3));
-    border-color: rgba(0, 188, 212, 0.4);
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.1), rgba(0, 96, 100, 0.2));
+    border-color: rgba(0, 229, 255, 0.3);
+}
+
+.xray-pre-btn.ai:hover {
+    border-color: rgba(0, 229, 255, 0.55);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
 }
 
 .xray-pre-btn.manual {
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(168, 140, 40, 0.3));
-    border-color: rgba(212, 175, 55, 0.4);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(168, 140, 40, 0.2));
+    border-color: rgba(212, 175, 55, 0.3);
+}
+
+.xray-pre-btn.manual:hover {
+    border-color: rgba(212, 175, 55, 0.55);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
 }
 
 .xray-pre-btn .icon {
-    font-size: 24px;
+    font-size: 26px;
 }
 
 .xray-pre-btn .title {
     display: block;
     font-family: var(--font-heading);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     margin-bottom: 4px;
 }
@@ -1575,43 +1677,53 @@ h1 {
 .xray-pre-btn .desc {
     display: block;
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
 }
 
 .xray-cancel-btn {
-    margin-top: 8px;
+    margin-top: 10px;
     padding: 12px;
-    background: var(--surface-raised);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
     border-radius: var(--radius-md);
     font-family: var(--font-body);
     font-weight: 600;
+    font-size: 13px;
     cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.xray-cancel-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* ================================
-   X-RAY CONTROLS
+   X-RAY CONTROLS (bottom bar)
 ================================ */
 .xray-controls {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 5;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 0 16px;
+    gap: 0;
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+    background: linear-gradient(0deg,
+            rgba(5, 8, 16, 0.88) 0%,
+            rgba(5, 8, 16, 0.6) 70%,
+            transparent 100%);
 }
 
 .xray-controls>button,
 .xray-controls>div {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
 }
 
@@ -1619,13 +1731,13 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
-    background: rgba(0, 0, 0, 0.7);
+    gap: 10px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-lg);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     width: 100%;
     max-width: 320px;
 }
@@ -1635,15 +1747,16 @@ h1 {
     align-items: center;
     gap: 12px;
     width: 100%;
-    color: #fff;
+    color: rgba(255, 255, 255, 0.85);
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
 }
 
 .xray-scale-wrapper input[type=range] {
     flex: 1;
-    accent-color: var(--primary-color);
+    accent-color: #00e5ff;
+    height: 4px;
 }
 
 .xray-confirm-btn {
@@ -1655,65 +1768,313 @@ h1 {
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: #1a0f00;
-    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.4);
+    background: linear-gradient(135deg, #00e5ff, #0097a7);
+    color: #050810;
+    box-shadow: 0 2px 16px rgba(0, 229, 255, 0.35);
     transition: all var(--transition-base);
+    letter-spacing: 0.3px;
 }
 
 .xray-confirm-btn:active {
     transform: scale(0.95);
+    box-shadow: 0 1px 8px rgba(0, 229, 255, 0.2);
 }
 
 .xray-capture-btn,
 .xray-reshuffle-btn {
-    padding: 12px 20px;
+    padding: 14px 24px;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: 50px;
     font-family: var(--font-body);
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     transition: all var(--transition-base);
+    letter-spacing: 0.3px;
 }
 
 .xray-capture-btn {
-    background: linear-gradient(135deg, #00bcd4, #006064);
-    color: #fff;
-    box-shadow: 0 2px 12px rgba(0, 188, 212, 0.4);
+    background: linear-gradient(135deg, #00e5ff, #0097a7);
+    color: #050810;
+    box-shadow: 0 2px 16px rgba(0, 229, 255, 0.35);
+}
+
+.xray-capture-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 8px rgba(0, 229, 255, 0.2);
 }
 
 .xray-reshuffle-btn {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 229, 255, 0.1);
+    color: #00e5ff;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 
-.xray-capture-btn:active,
 .xray-reshuffle-btn:active {
     transform: scale(0.95);
+    background: rgba(0, 229, 255, 0.18);
 }
 
+/* --- Close button --- */
 .xray-close-btn {
     position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 5;
-    width: 44px;
-    height: 44px;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    font-size: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.xray-close-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ================================
+   X-RAY DECK PANEL (unplaced cards)
+================================ */
+.xray-deck-panel {
+    position: fixed;
+    top: 80px;
+    left: 8px;
+    right: 8px;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    max-height: 220px;
+    background: rgba(10, 14, 26, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 229, 255, 0.12);
+    border-radius: var(--radius-lg);
+    pointer-events: auto;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 229, 255, 0.2);
+    animation: fadeInUp 0.35s ease-out;
+}
+
+.xray-deck-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px 4px;
+    flex-shrink: 0;
+}
+
+.xray-deck-title {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 700;
+    color: #00e5ff;
+    letter-spacing: 0.3px;
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
+.xray-deck-toggle {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+    transition: color 0.2s;
+    border-radius: 4px;
+}
+
+.xray-deck-toggle:hover {
+    color: #00e5ff;
+    background: rgba(0, 229, 255, 0.08);
+}
+
+.xray-deck-cards {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 12px 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 229, 255, 0.15) transparent;
+}
+
+.xray-deck-cards::-webkit-scrollbar {
+    height: 2px;
+}
+
+.xray-deck-cards::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.2);
+    border-radius: 2px;
+}
+
+@keyframes xrayDeckCardIn {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.xray-deck-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    width: 60px;
+    cursor: default;
+    animation: xrayDeckCardIn 0.3s ease-out both;
+    overflow: visible;
+}
+
+.xray-deck-card:nth-child(2) {
+    animation-delay: 0.03s;
+}
+
+.xray-deck-card:nth-child(3) {
+    animation-delay: 0.06s;
+}
+
+.xray-deck-card:nth-child(4) {
+    animation-delay: 0.09s;
+}
+
+.xray-deck-card:nth-child(5) {
+    animation-delay: 0.12s;
+}
+
+.xray-deck-card:nth-child(6) {
+    animation-delay: 0.15s;
+}
+
+.xray-deck-card:nth-child(7) {
+    animation-delay: 0.18s;
+}
+
+.xray-deck-card:nth-child(8) {
+    animation-delay: 0.21s;
+}
+
+.xray-deck-card:nth-child(n+9) {
+    animation-delay: 0.24s;
+}
+
+.xray-deck-card-img {
+    width: 60px;
+    height: auto;
+    border-radius: 6px;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.3);
+    display: block;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.xray-deck-card:hover .xray-deck-card-img {
+    transform: scale(1.25);
+    border-color: rgba(0, 229, 255, 0.6);
+    box-shadow: 0 4px 18px rgba(0, 229, 255, 0.3);
+    z-index: 5;
+    position: relative;
+}
+
+.xray-deck-card-fallback {
+    width: 60px;
+    min-height: 84px;
+    border-radius: 6px;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(10, 14, 26, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4px;
+}
+
+.xray-deck-card-fallback span {
+    font-family: var(--font-body);
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.3;
+}
+
+.xray-deck-card-name {
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.2s;
+}
+
+.xray-deck-card:hover .xray-deck-card-name {
+    color: rgba(0, 229, 255, 0.7);
+}
+
+/* Desktop: larger deck cards */
+@media (min-width: 600px) {
+    .xray-deck-panel {
+        max-height: 260px;
+    }
+
+    .xray-deck-cards {
+        gap: 10px;
+        padding: 16px 16px 12px;
+    }
+
+    .xray-deck-card {
+        width: 75px;
+    }
+
+    .xray-deck-card-img {
+        width: 75px;
+        border-radius: 7px;
+    }
+
+    .xray-deck-card-fallback {
+        width: 75px;
+        min-height: 105px;
+        border-radius: 7px;
+    }
+
+    .xray-deck-card-fallback span {
+        font-size: 9px;
+    }
+
+    .xray-deck-card-name {
+        font-size: 9px;
+        max-width: 78px;
+    }
+
+    .xray-deck-title {
+        font-size: 13px;
+    }
 }
 
 /* ================================
@@ -1889,7 +2250,7 @@ h1 {
 ================================ */
 .scan-toast {
     position: fixed;
-    bottom: 24px;
+    bottom: 48px;
     left: 50%;
     transform: translateX(-50%) translateY(100px);
     background: var(--surface-color);
@@ -1936,7 +2297,9 @@ h1 {
     .board-card {
         min-height: 180px;
     }
-}/* ================================
+}
+
+/* ================================
    X-RAY REMAINING
 ================================ */
 .xray-remaining-container {
@@ -1975,8 +2338,9 @@ h1 {
 .xray-remaining-list::-webkit-scrollbar {
     width: 4px;
 }
+
 .xray-remaining-list::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
 }
 
@@ -1987,6 +2351,6 @@ h1 {
     background-size: cover;
     background-position: center;
     background-color: var(--surface-color);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }

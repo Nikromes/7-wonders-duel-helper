@@ -433,6 +433,7 @@ function initXray() {
         // Randomly pick cards for each detected position
         const shuffled = shuffle(hiddenCards);
         const assigned = shuffled.slice(0, spotsOnTable);
+        const unassigned = shuffled.slice(spotsOnTable);
 
         xrayCards.innerHTML = assigned.map((card, i) => {
             const pos = detectedPositions[i];
@@ -440,9 +441,10 @@ function initXray() {
 
             // Если pos.w существует (снято в ручном режиме), применяем ширину
             const widthStyle = pos.w ? `width: ${pos.w}%;` : '';
+            const scanDelay = (i * 0.07).toFixed(2);
 
             return `
-                <div class="xray-card" style="left: ${pos.x}%; top: ${pos.y}%; ${widthStyle}">
+                <div class="xray-card scanning" style="left: ${pos.x}%; top: ${pos.y}%; ${widthStyle} animation-delay: ${scanDelay}s;">
                     <img class="xray-card-img" src="${imgSrc}" alt="${card.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
                     <div class="xray-card-fallback" style="display:none;">
                         <div class="xray-card-title">${card.title}</div>
@@ -451,6 +453,38 @@ function initXray() {
                 </div>
             `;
         }).join('');
+
+        // After scan animation completes, switch to normal pulse/float
+        const scanDuration = assigned.length * 70 + 700;
+        setTimeout(() => {
+            xrayCards.querySelectorAll('.xray-card.scanning').forEach(el => {
+                el.classList.remove('scanning');
+                el.style.animationDelay = '';
+            });
+        }, scanDuration);
+
+        // Render deck panel with unassigned cards
+        const xrayDeckPanel = document.getElementById('xrayDeckPanel');
+        const xrayDeckCards = document.getElementById('xrayDeckCards');
+
+        if (unassigned.length > 0) {
+            xrayDeckCards.innerHTML = unassigned.map(card => {
+                const imgSrc = loadedCardFaces.get(card.id) || `assets/cards/faces/${card.id}.jpg`;
+                return `
+                    <div class="xray-deck-card" title="${card.title}">
+                        <img class="xray-deck-card-img" src="${imgSrc}" alt="${card.title}"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                        <div class="xray-deck-card-fallback" style="display:none;">
+                            <span>${card.title}</span>
+                        </div>
+                        <div class="xray-deck-card-name">${card.title}</div>
+                    </div>
+                `;
+            }).join('');
+            xrayDeckPanel.style.display = 'flex';
+        } else {
+            xrayDeckPanel.style.display = 'none';
+        }
     }
 
     function captureFrame() {
@@ -728,7 +762,19 @@ function initXray() {
         xrayWireframeContainer.style.display = 'none';
         xrayManualControls.style.display = 'none';
         xrayPreActions.style.display = 'none';
+        document.getElementById('xrayDeckPanel').style.display = 'none';
     };
+
+    // Deck panel collapse/expand toggle
+    const xrayDeckToggle = document.getElementById('xrayDeckToggle');
+    const xrayDeckPanel = document.getElementById('xrayDeckPanel');
+    let deckExpanded = true;
+    xrayDeckToggle.addEventListener('click', () => {
+        deckExpanded = !deckExpanded;
+        const xrayDeckCards = document.getElementById('xrayDeckCards');
+        xrayDeckCards.style.display = deckExpanded ? '' : 'none';
+        xrayDeckToggle.textContent = deckExpanded ? '▲' : '▼';
+    });
 
     // Shared analysis function — takes dataUrl, detects positions, renders cards
     async function analyzeFrame(frameDataUrl) {

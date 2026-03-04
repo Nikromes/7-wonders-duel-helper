@@ -137,7 +137,7 @@
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <circle cx="12" cy="13" r="4" />
                     </svg>
-                    <span>Сканировать стол</span>
+                    <span>Сканировать стол (AI)</span>
                 </button>
                 <button class="xray-btn" id="xrayBtn" title="X-Ray зрение">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -149,7 +149,7 @@
                         <line x1="2" y1="12" x2="6" y2="12" />
                         <line x1="18" y1="12" x2="22" y2="12" />
                     </svg>
-                    <span>X-Ray</span>
+                    <span>X-Ray (Ручной / AI)</span>
                 </button>
                 <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none">
             </div>
@@ -180,6 +180,15 @@
 
             <div class="xray-stats" id="xrayStats"></div>
             <div class="xray-cards" id="xrayCards"></div>
+
+            <!-- Deck Panel — unplaced cards remaining -->
+            <div class="xray-deck-panel" id="xrayDeckPanel" style="display:none;">
+                <div class="xray-deck-header" id="xrayDeckHeader">
+                    <span class="xray-deck-title">🃏 В коробке</span>
+                    <button class="xray-deck-toggle" id="xrayDeckToggle">▲</button>
+                </div>
+                <div class="xray-deck-cards" id="xrayDeckCards"></div>
+            </div>
 
             <!-- Pre-analysis mode selection -->
             <div class="xray-pre-actions" id="xrayPreActions" style="display:none;">
